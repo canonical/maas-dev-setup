@@ -46,7 +46,7 @@ The script will:
   * Setup bridges so that MAAS can reach your network
   * Connect your local LXD to the MAAS development container so that MAAS can provision virtual machines
 
-Basically the script mimics the steps described in [this discord post](https://discourse.maas.io/t/setting-up-a-minimal-dev-environment-with-lxd/6318) and configures your maas-dev host to be able to connect to your local LXD.
+Basically the script mimics the steps described in [this discourse post](https://discourse.maas.io/t/setting-up-a-minimal-dev-environment-with-lxd/6318) and configures your maas-dev host to be able to connect to your local LXD.
 
 The script will stop on any error, so please be sure to skip stages, if you have already done them.
 
