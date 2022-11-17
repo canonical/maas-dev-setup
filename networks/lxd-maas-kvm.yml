@@ -1,0 +1,13 @@
+config:
+  ipv4.address: 10.20.0.1/24
+  ipv4.dhcp: "false"
+  ipv4.nat: "true"
+  ipv6.address: none
+description: ""
+name: maas-kvm
+type: bridge
+used_by: []
+managed: true
+status: Created
+locations:
+- none

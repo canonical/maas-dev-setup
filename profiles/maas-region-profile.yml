@@ -1,0 +1,24 @@
+config:
+    raw.idmap: |
+        REPLACE_WITH_YOUR_UID
+        REPLACE_WITH_YOUR_GID
+    user.vendor-data: |
+        #cloud-config
+        packages:
+        - git 
+        - build-essential
+        - jq
+        runcmd:
+        - cat /dev/zero | ssh-keygen -q -N ""
+        ssh_authorized_keys:
+        - REPLACE_WITH_SSH_KEY
+description: Build environment for MAAS
+devices:
+    work:
+        type: disk
+        source: REPLACE_WITH_MAAS_SOURCE
+        path: /work
+    eth0:
+        type: nic
+        name: eth0
+        network: maas-ctrl

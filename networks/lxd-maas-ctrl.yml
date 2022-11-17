@@ -1,0 +1,15 @@
+config:
+  dns.domain: maas-ctrl
+  ipv4.address: 10.10.0.1/24
+  ipv4.dhcp: "true"
+  ipv4.dhcp.ranges: 10.10.0.16-10.10.0.31
+  ipv4.nat: "true"
+  ipv6.address: none
+description: ""
+name: maas-ctrl
+type: bridge
+used_by: []
+managed: true
+status: Created
+locations:
+- none
