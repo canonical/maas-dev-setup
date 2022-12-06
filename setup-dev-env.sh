@@ -121,17 +121,15 @@ setup_lxd() {
   echo "  - Note that LXD per default does not assign networks to projects"
   cd ${script_dir}
   
-  # if [ -n ${MAAS_LXD_PROJECT} ] && [ ${MAAS_LXD_PROJECT} != "default" ]; then
-  #   lxc project create ${MAAS_LXD_PROJECT}
-  #   lxc project set ${MAAS_LXD_PROJECT} features.networks true
-  # else
-  #   MAAS_LXD_PROJECT=default
-  # fi
+  if [ -n ${MAAS_LXD_PROJECT} ] && [ ${MAAS_LXD_PROJECT} != "default" ]; then
+    lxc project create ${MAAS_LXD_PROJECT}
+    lxc project set ${MAAS_LXD_PROJECT} features.networks true
+  else
+    MAAS_LXD_PROJECT=default
+  fi
  
-  # lxc --project=${MAAS_LXD_PROJECT} network create maas-ctrl
-  lxc network create maas-ctrl
-  # cat << __EOF | lxc --project=${MAAS_LXD_PROJECT} network edit maas-ctrl
-  cat << __EOF | lxc network edit maas-ctrl
+  lxc --project=${MAAS_LXD_PROJECT} network create maas-ctrl
+  cat << __EOF | lxc --project=${MAAS_LXD_PROJECT} network edit maas-ctrl
 config:
   dns.domain: maas-ctrl
   ipv4.address: ${MAAS_CONTROL_IP_RANGE}/24
@@ -149,10 +147,8 @@ locations:
 - none
 __EOF
 
-  # lxc --project=${MAAS_LXD_PROJECT} network create maas-kvm
-  lxc network create maas-kvm
-  # cat << __EOF | lxc --project=${MAAS_LXD_PROJECT} network edit maas-kvm
-  cat << __EOF | lxc network edit maas-kvm
+  lxc --project=${MAAS_LXD_PROJECT} network create maas-kvm
+  cat << __EOF | lxc --project=${MAAS_LXD_PROJECT} network edit maas-kvm
 config:
   ipv4.address: ${MAAS_MANAGEMENT_IP_RANGE}/24
   ipv4.dhcp: "false"
@@ -178,10 +174,8 @@ __EOF
 
   echo "#######################"
   echo "Setting up LXD profiles"
-  # lxc profile create --project=${MAAS_LXD_PROJECT} ${MAAS_CONTAINER_NAME}
-  lxc profile create ${MAAS_CONTAINER_NAME}
-  # cat <<EOF | lxc profile edit --project=${MAAS_LXD_PROJECT} ${MAAS_CONTAINER_NAME}
-  cat <<EOF | lxc profile edit ${MAAS_CONTAINER_NAME}
+  lxc profile create --project=${MAAS_LXD_PROJECT} ${MAAS_CONTAINER_NAME}
+  cat <<EOF | lxc profile edit --project=${MAAS_LXD_PROJECT} ${MAAS_CONTAINER_NAME}
 config:
     raw.idmap: |
         uid $(id -u) 1000
