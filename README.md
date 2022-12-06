@@ -5,6 +5,22 @@
 To make the setup of a MAAS development environment super simple.
 Think of this as a one click installer.
 
+## Requirements
+
+* Ubuntu (maybe Debian)
+* `sudo` and the ability to run commands as root
+* To use MAAS a decent amount of RAM would be good (> 8GB)
+
+In the best case LXD is not configured on your system. However, if you have running
+containers and network configurations, this is not ab problem but make sure
+that the following names/network ranges are not yet used by LXD (or change values in 
+`config.sh`).
+
+* a profile in LXDs default project called `$MAAS_CONTAINER_NAME`
+* two networks named `maas-ctrl` and `maas-kvm`
+  * these networks will use the IP ranges `$MAAS_CONTROL_IP_RANGE` and `MAAS_MANAGEMENT_IP_RANGE`
+
+
 ## How to run this script?
 
 1. Edit the `config.sh` file according to your needs.
@@ -42,9 +58,10 @@ The script will:
   * DISABLE YOUR UFW FIREWALL (to make sure lxd connections work)
   * Install git, make, lxd, snapcraft, libvirt with qemu
   * Clone the source code and (if configured) add a branch for your launcpad account
-  * Setup LXD to have a MAAS development container
+  * Setup LXD to have a MAAS development container, profiles and networks
   * Setup bridges so that MAAS can reach your network
-  * Connect your local LXD to the MAAS development container so that MAAS can provision virtual machines
+  * Will prepare to connect your local LXD to the MAAS development container, so that MAAS can provision virtual machines on your local host
+    * You will still have to do a single manual step here, but you will be guided by the script
 
 Basically the script mimics the steps described in [this discourse post](https://discourse.maas.io/t/setting-up-a-minimal-dev-environment-with-lxd/6318) and configures your maas-dev host to be able to connect to your local LXD.
 
