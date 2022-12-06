@@ -24,6 +24,7 @@ skip_ufw=0
 skip_dep=0
 skip_lxi=0
 skip_lxd=0
+skip_lxn=0
 skip_co=0
 
 show_help() {
@@ -50,10 +51,11 @@ show_help() {
   echo "Flags:"
   echo "  -h --help         show this help"
   echo "  ${run_it_arg}              start the setup"
-  echo "  -su --skip-ufw    skip disabling ufw"
+  echo "  -su --skip-ufw    skip disabling UFW"
   echo "  -sd --skip-dep    skip installing dependencies to your local system"
-  echo "  -si --skip-lxi    skip initializing lxd (lxd auto init)"
-  echo "  -sl --skip-lxd    skip setting up lxd profiles, networks and starting container"
+  echo "  -si --skip-lxi    skip initializing LXD (lxd auto init)"
+  echo "  -sn --skip-lxn    skip setting up LXD profiles and networks"
+  echo "  -sl --skip-lxd    skip starting the LXD container"
   echo "  -sc --skip-checkout skip checking out the code and building the snap tree"
   echo ""
   echo "Note:"
@@ -251,7 +253,7 @@ run() {
     echo "Skipping LXD init"
     echo ""
   fi
-  if [ ${skip_lxd} -ne 1 ]; then
+  if [ ${skip_lxn} -ne 1 ]; then
     setup_lxd
   else
     echo "Skipping LXD setup"
@@ -290,6 +292,9 @@ while :; do
           ;;
       -si|--skip-lxi)
           skip_lxi=1
+          ;;
+      -sl|--skip-lxn)
+          skip_lxn=1
           ;;
       -sl|--skip-lxd)
           skip_lxd=1
