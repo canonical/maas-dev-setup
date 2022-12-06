@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # This script is executed inside the maas-region-controller container
 # once it is setup by setup-dev-env.sh
@@ -9,7 +9,10 @@ set -e
 
 container_ip=$(hostname -I | cut -d' ' -f1)
 gateway_ip=$(hostname -I | cut -d' ' -f1)
-network_prefix="10.20.0."
+control_network_prefix=${MAAS_CONTROL_IP_RANGE%.*}
+kvm_network_prefix=${MAAS_MANAGEMENT_IP_RANGE%.*}
+
+echo "${container_ip} ${gateway_ip} ${control_network_prefix} ${kvm_network_prefix}"
 
 echo 
 echo "######################################"
@@ -27,7 +30,7 @@ network:
     ethernets:
         eth1:
             addresses:
-                - 10.20.0.2/24
+                - ${control_network_prefix}.2/24
 EOF
 sudo netplan apply
 
@@ -82,14 +85,14 @@ echo "Starting DHCP on second network"
 rack_controllers=$(maas admin rack-controllers read)
 target_rack_controller=$(echo $rack_controllers | jq --raw-output .[].system_id)
 target_fabric_id=$(echo $rack_controllers | jq '.[].interface_set[].links[] | select(.subnet.name | startswith("10.20.0.")) | .subnet.vlan.fabric_id')
-maas admin subnet update 10.20.0.0/24 gateway_ip=10.20.0.1
-export ip_range=$(maas admin ipranges create type=dynamic start_ip=10.20.0.99 end_ip=10.20.0.254 comment='To enable dhcp')
+maas admin subnet update ${MAAS_MANAGEMENT_IP_RANGE}/24 gateway_ip={kvm_network_prefix}.1
+export ip_range=$(maas admin ipranges create type=dynamic start_ip=${kvm_network_prefix}.99 end_ip=${kvm_network_prefix}.254 comment='To enable dhcp')
 maas admin vlan update $target_fabric_id untagged dhcp_on=True primary_rack=$target_rack_controller
 
 echo 
 echo "#############################"
 echo "Adding your hosts lxd to MAAS"
-maas admin vm-hosts create type=lxd power_address=10.10.0.1 project=maas name=maas-host
+maas admin vm-hosts create type=lxd power_address=${control_network_prefix}.1 project=maas name=maas-host
 
 echo 
 echo "#################################################################"

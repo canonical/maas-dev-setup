@@ -12,32 +12,36 @@ set -e
 
 # get absolute path for lxd
 maas_src=$(readlink -f ${MAAS_SRC})
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) 
 # see https://stackoverflow.com/questions/29832037/how-to-get-script-directory-in-posix-sh
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) 
+
+control_network_prefix=${MAAS_CONTROL_IP_RANGE%.*}
+kvm_network_prefix=${MAAS_MANAGEMENT_IP_RANGE%.*}
+
 run_it_arg="--ok"
 run_it=0
 skip_ufw=0
 skip_dep=0
 skip_lxi=0
 skip_lxd=0
-skip_virt=0
 skip_co=0
 
 show_help() {
   echo "Description:"
   echo "  This script sets up a complete dev environment for MAAS."
   echo ""
-  echo "  !Attention! This will install packages to your system and "
-  echo "              setup a new MAAS LXD project"
+  echo "  !Attention! This will install packages to your system and"
+  echo "    setup profiles, networks and containers for MAAS in LXD"
   echo ""
   echo "  The script does:"
   echo "    * DISABLE YOUR UFW FIREWALL (to make sure lxd connections work)"
-  echo "    * install git, make, lxd, snapcraft, libvirt with qemu"
+  echo "    * install git, make, lxd, snapcraft"
   echo "    * clone the source code and"
   echo "      (if configured) add a branch for your launcpad account"
   echo "    * setup bridges so that MAAS can reach your network"
   echo "    * setup LXD so that MAAS can search through your local network"
-  echo "    * connect your local LXD to the MAAS development container so that MAAS can provision virtual machines"
+  echo "    * connect your local LXD to the MAAS development container so that"
+  echo "      MAAS can provision virtual machines"
   echo ""
   echo "Usage:"
   echo "  $0"
@@ -50,7 +54,6 @@ show_help() {
   echo "  -sd --skip-dep    skip installing dependencies to your local system"
   echo "  -si --skip-lxi    skip initializing lxd (lxd auto init)"
   echo "  -sl --skip-lxd    skip setting up lxd profiles, networks and starting container"
-  echo "  -sv --skip-virt   skip setting up libvirt network to autostart"
   echo "  -sc --skip-checkout skip checking out the code and building the snap tree"
   echo ""
   echo "Note:"
@@ -77,7 +80,7 @@ install_dependencies() {
   echo "Installing dependencies..."
   sudo snap install lxd
   sudo snap install snapcraft --classic
-  sudo apt-get install git make libvirt-clients libvirt-daemon-driver-qemu libvirt-daemon-system
+  sudo apt-get install git make
   echo "..done"
   echo
 }
@@ -96,9 +99,9 @@ setup_code() {
   mkdir -p ${maas_src} && cd ${maas_src}
   git clone --origin upstream https://git.launchpad.net/maas . --recurse-submodules
   echo "..done"
-  if [ ${LAUNCHPAD_ID} != "" ]; then
-    echo "Adding your origin remote git+ssh://${LAUNCHPAD_ID}@git.launchpad.net/~${LAUNCHPAD_ID}/maas"
-    git remote add origin git+ssh://${LAUNCHPAD_ID}@git.launchpad.net/~${LAUNCHPAD_ID}/maas
+  if [ ${MAAS_LAUNCHPAD_ID} != "" ]; then
+    echo "Adding your origin remote git+ssh://${MAAS_LAUNCHPAD_ID}@git.launchpad.net/~${MAAS_LAUNCHPAD_ID}/maas"
+    git remote add origin git+ssh://${MAAS_LAUNCHPAD_ID}@git.launchpad.net/~${MAAS_LAUNCHPAD_ID}/maas
   fi
   echo "..done"
   echo
@@ -112,27 +115,70 @@ setup_code() {
 setup_lxd() {
   echo "#######################"
   echo "Setting up LXD networks"
+  echo
+  echo "  - Note that LXD per default does not assign networks to projects"
   cd ${script_dir}
+  
+  # if [ -n ${MAAS_LXD_PROJECT} ] && [ ${MAAS_LXD_PROJECT} != "default" ]; then
+  #   lxc project create ${MAAS_LXD_PROJECT}
+  #   lxc project set ${MAAS_LXD_PROJECT} features.networks true
+  # else
+  #   MAAS_LXD_PROJECT=default
+  # fi
+ 
+  # lxc --project=${MAAS_LXD_PROJECT} network create maas-ctrl
   lxc network create maas-ctrl
-  cat networks/lxd-maas-ctrl.yml | lxc network edit maas-ctrl
+  # cat << __EOF | lxc --project=${MAAS_LXD_PROJECT} network edit maas-ctrl
+  cat << __EOF | lxc network edit maas-ctrl
+config:
+  dns.domain: maas-ctrl
+  ipv4.address: ${MAAS_CONTROL_IP_RANGE}/24
+  ipv4.dhcp: "true"
+  ipv4.dhcp.ranges: ${control_network_prefix}.16-${control_network_prefix}.31
+  ipv4.nat: "true"
+  ipv6.address: none
+description: ""
+name: maas-ctrl
+type: bridge
+used_by: []
+managed: true
+status: Created
+locations:
+- none
+__EOF
 
+  # lxc --project=${MAAS_LXD_PROJECT} network create maas-kvm
   lxc network create maas-kvm
-  cat networks/lxd-maas-kvm.yml | lxc network edit maas-kvm
+  # cat << __EOF | lxc --project=${MAAS_LXD_PROJECT} network edit maas-kvm
+  cat << __EOF | lxc network edit maas-kvm
+config:
+  ipv4.address: ${MAAS_MANAGEMENT_IP_RANGE}/24
+  ipv4.dhcp: "false"
+  ipv4.nat: "true"
+  ipv6.address: none
+description: ""
+name: maas-kvm
+type: bridge
+used_by: []
+managed: true
+status: Created
+locations:
+- none
+__EOF
   echo "..done"
   echo
   
-  echo "################################"
-  echo "Setting up LXD pasword and trust"
-  # TODO: should work without
-  # lxc config set core.trust_password ${LXD_SECRET}
-  lxc config set core.https_address [::]:8443
-  echo "..done"
-  echo
+  # echo "################################"
+  # echo "Setting LXD HTTPS address to 8443"
+  # lxc config set core.https_address [::]:8443
+  # echo "..done"
+  # echo
 
   echo "#######################"
   echo "Setting up LXD profiles"
+  # lxc profile create --project=${MAAS_LXD_PROJECT} ${MAAS_CONTAINER_NAME}
   lxc profile create ${MAAS_CONTAINER_NAME}
-  # a bit much to replace to use a file and sed on it
+  # cat <<EOF | lxc profile edit --project=${MAAS_LXD_PROJECT} ${MAAS_CONTAINER_NAME}
   cat <<EOF | lxc profile edit ${MAAS_CONTAINER_NAME}
 config:
     raw.idmap: |
@@ -167,17 +213,6 @@ EOF
   echo
 }
 
-setup_libvirt() {
-  echo "############################################"
-  echo "Setting up libvirt to autostart maas network"
-  cd ${script_dir}
-  sudo virsh net-define networks/libvirt-maas-ctrl-net.xml
-  sudo virsh net-start maas-ctrl
-  sudo virsh net-autostart maas-ctrl
-  echo "..done"
-  echo
-}
-
 start_container() {
   echo "##################################################################"
   echo "Setting up MAAS development container named ${MAAS_CONTAINER_NAME}"
@@ -190,16 +225,14 @@ start_container() {
 
 configure_container() {
   cd ${script_dir}
+  container_ip=$(lxc list -c4 --format csv ${MAAS_CONTAINER_NAME} | grep "${control_network_prefix}"| cut -d' ' -f1)
   echo "################################################################"
-  echo "SSHing into ${MAAS_CONTAINER_NAME} development and setting it up"
-  container_ip=$(lxc list -c4 --format csv ${MAAS_CONTAINER_NAME} | grep "10\.10\.0\."| cut -d' ' -f1)
-  echo ${container_ip}
+  echo "SSHing into ${MAAS_CONTAINER_NAME} (${container_ip}) development and setting it up"
   # could pass vars in there with ssh ubuntu@${container_ip} 'bash -s' < setup-region-via-ssh.sh var1 var2 ...
-  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} < setup-region-via-ssh.sh
+  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE} MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE} bash -s < setup-region-via-ssh.bash
 }
 
 run() {
-  echo $skip_ufw $skip_dep $skip_lxi $skip_lxd $skip_virt $skip_co
   if [ ${skip_ufw} -ne 1 ]; then
     disable_ufw
   else
@@ -222,12 +255,6 @@ run() {
     setup_lxd
   else
     echo "Skipping LXD setup"
-    echo ""
-  fi
-  if [ ${skip_virt} -ne 1 ]; then
-    setup_libvirt
-  else
-    echo "Skipping libvirt setup"
     echo ""
   fi
   if [ ${skip_co} -ne 1 ]; then
@@ -266,9 +293,6 @@ while :; do
           ;;
       -sl|--skip-lxd)
           skip_lxd=1
-          ;;
-      -sv|--skip-virt)
-          skip_virt=1
           ;;
       -sc|--skip-checkout)
           skip_co=1
