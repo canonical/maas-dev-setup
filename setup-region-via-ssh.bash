@@ -98,6 +98,10 @@ echo
 echo "#################################################################"
 echo "We are done! You should have a running MAAS installation!"
 echo
+echo "  please go to http://${container_ip}:5240 and finish the setup"
+echo "   username: maas"
+echo "   password: maas"
+echo
 echo "To complete the setup point your browser to"
 echo "  http://${container_ip}:5240/MAAS/r/kvm/lxd"
 echo "and do to maas-host -> KVM host settings -> Download certificate."
