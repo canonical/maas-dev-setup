@@ -278,7 +278,7 @@ while :; do
       -si|--skip-lxi)
           skip_lxi=1
           ;;
-      -sl|--skip-lxn)
+      -sn|--skip-lxn)
           skip_lxn=1
           ;;
       -sl|--skip-lxd)
