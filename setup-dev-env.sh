@@ -13,7 +13,7 @@ set -e
 # get absolute path for lxd
 maas_src=$(readlink -f ${MAAS_SRC})
 # see https://stackoverflow.com/questions/29832037/how-to-get-script-directory-in-posix-sh
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) 
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
 control_network_prefix=${MAAS_CONTROL_IP_RANGE%.*}
 kvm_network_prefix=${MAAS_MANAGEMENT_IP_RANGE%.*}
@@ -38,7 +38,7 @@ show_help() {
   echo "    * DISABLE YOUR UFW FIREWALL (to make sure lxd connections work)"
   echo "    * install git, make, lxd, snapcraft"
   echo "    * clone the source code and"
-  echo "      (if configured) add a branch for your launcpad account"
+  echo "      (if configured) add a branch for your launchpad account"
   echo "    * setup bridges so that MAAS can reach your network"
   echo "    * setup LXD so that MAAS can search through your local network"
   echo "    * connect your local LXD to the MAAS development container so that"
@@ -118,7 +118,7 @@ setup_lxd() {
   echo "#######################"
   echo "Setting up LXD networks"
   cd ${script_dir}
-  
+
   lxc network create maas-ctrl
   cat << __EOF | lxc network edit maas-ctrl
 config:
@@ -156,12 +156,12 @@ locations:
 __EOF
   echo "..done"
   echo
-  
-  # echo "################################"
-  # echo "Setting LXD HTTPS address to 8443"
-  # lxc config set core.https_address [::]:8443
-  # echo "..done"
-  # echo
+
+  echo "################################"
+  echo "Setting LXD HTTPS address to 8443"
+  lxc config set core.https_address [::]:8443
+  echo "..done"
+  echo
 
   echo "#######################"
   echo "Setting up LXD profiles"
@@ -174,7 +174,7 @@ config:
     user.vendor-data: |
         #cloud-config
         packages:
-        - git 
+        - git
         - build-essential
         - jq
         runcmd:
@@ -229,7 +229,7 @@ run() {
   if [ ${skip_dep} -ne 1 ]; then
     install_dependencies
   else
-    echo "Skipping local dependencie"
+    echo "Skipping local dependencies"
     echo ""
   fi
   if [ ${skip_lxi} -ne 1 ]; then
@@ -278,7 +278,7 @@ while :; do
       -si|--skip-lxi)
           skip_lxi=1
           ;;
-      -sl|--skip-lxn)
+      -sn|--skip-lxn)
           skip_lxn=1
           ;;
       -sl|--skip-lxd)
@@ -302,4 +302,3 @@ if [ ${run_it} -eq 1 ]; then
 else
   show_help
 fi
- 
