@@ -14,14 +14,14 @@ kvm_network_prefix=${MAAS_MANAGEMENT_IP_RANGE%.*}
 
 echo "${container_ip} ${gateway_ip} ${control_network_prefix} ${kvm_network_prefix}"
 
-echo 
+echo
 echo "######################################"
 echo "Installing make and MAAS dependencies."
 sudo apt-get install make
 cd /work
 make install-dependencies
 
-echo 
+echo
 echo "##########################################################"
 echo "Setting up the second interface (no dhcp one) to talk home"
 sudo tee /etc/netplan/99-maas-kvm-net.yaml <<EOF
@@ -30,71 +30,69 @@ network:
     ethernets:
         eth1:
             addresses:
-                - ${control_network_prefix}.2/24
+                - ${kvm_network_prefix}.2/24
 EOF
 sudo netplan apply
 
-echo 
+echo
 echo "############################################"
 echo "Disabling postgres, nginx and dhcp services."
 sudo systemctl stop named postgresql nginx isc-dhcp-server
 sudo systemctl disable named postgresql nginx isc-dhcp-server
 
-echo 
+echo
 echo "#################################"
-echo "Installing the MAAS test batabase"
-sudo snap install maas-test-db
+echo "Installing the MAAS test database"
+sudo snap install maas-test-db --channel=latest/edge
 
-echo 
+echo
 echo "#######################"
 echo "Unpacking the snap tree"
 sudo snap try dev-snap/tree
 
-echo 
+echo
 echo "##########################"
 echo "Connecting snap interfaces"
 ./utilities/connect-snap-interfaces
 
-echo 
+echo
 echo "####################################"
 echo "Installing and running the MAAS snap"
 make
 make snap-tree-sync
 sudo snap restart maas
 
-echo 
+echo
 echo "#####################"
 echo "Starting the database"
 sudo maas init region+rack --maas-url="http://${container_ip}:5240/MAAS" --database-uri maas-test-db:///
 
-echo 
+echo
 echo "##########################"
 echo "Creating a MAAS admin user"
 sudo maas createadmin --username maas --password maas --email maas@example.com
 
-echo 
+echo
 echo "###########################"
-echo "Logging using admin profile"
+echo "Login using admin profile"
 maas login admin "http://${container_ip}:5240/MAAS/api/2.0/" $(sudo maas apikey --username=maas)
 
-echo 
+echo
 echo "###############################"
 echo "Starting DHCP on second network"
-# target_network=$(maas admin subnets read | jq .[].name --raw-output | grep "10\.20\.0\.")
-#
 rack_controllers=$(maas admin rack-controllers read)
 target_rack_controller=$(echo $rack_controllers | jq --raw-output .[].system_id)
-target_fabric_id=$(echo $rack_controllers | jq '.[].interface_set[].links[] | select(.subnet.name | startswith("10.20.0.")) | .subnet.vlan.fabric_id')
-maas admin subnet update ${MAAS_MANAGEMENT_IP_RANGE}/24 gateway_ip={kvm_network_prefix}.1
+target_fabric_id=$(echo $rack_controllers | jq '.[].interface_set[].links[] | select(.subnet.name | startswith('\"$kvm_network_prefix.\"')) | .subnet.vlan.fabric_id')
+maas admin subnet update ${kvm_network_prefix}.0/24 gateway_ip=${kvm_network_prefix}.1
 export ip_range=$(maas admin ipranges create type=dynamic start_ip=${kvm_network_prefix}.99 end_ip=${kvm_network_prefix}.254 comment='To enable dhcp')
 maas admin vlan update $target_fabric_id untagged dhcp_on=True primary_rack=$target_rack_controller
 
-echo 
+echo
 echo "#############################"
 echo "Adding your hosts lxd to MAAS"
 maas admin vm-hosts create type=lxd power_address=${control_network_prefix}.1 project=maas name=maas-host
 
-echo 
+echo
 echo "#################################################################"
 echo "We are done! You should have a running MAAS installation!"
 echo
@@ -106,7 +104,7 @@ echo "To complete the setup point your browser to"
 echo "  http://${container_ip}:5240/MAAS/r/kvm/lxd"
 echo "and do to maas-host -> KVM host settings -> Download certificate."
 echo "Install the certificate to your local lxd with:"
-echo "  lxd config trust add <path/to/maas-host@...>"
+echo "  lxc config trust add <path/to/maas-host@...>"
 echo "Go back to your browser and click 'Refresh host'"
 echo
 echo "Have fun developing MAAS"
