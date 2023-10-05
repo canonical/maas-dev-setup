@@ -63,6 +63,11 @@ make snap-tree-sync
 sudo snap restart maas
 
 echo
+echo "#######################"
+echo "Generating offline docs"
+make doc
+
+echo
 echo "#####################"
 echo "Starting the database"
 sudo maas init region+rack --maas-url="http://${container_ip}:5240/MAAS" --database-uri maas-test-db:///
