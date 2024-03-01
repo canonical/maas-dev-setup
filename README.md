@@ -31,7 +31,7 @@ that the following names/network ranges are not yet used by LXD (or change value
 ```
 3. Run this to start
 ```sh
-./setup-dev-env.sh --yes
+./setup-dev-env.sh --ok
 ```
 
 If you would like to tear down your MAAS dev environment completely,
