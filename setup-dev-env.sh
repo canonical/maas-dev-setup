@@ -236,9 +236,9 @@ add_ca_crt(){
     exit 1
   fi
   echo "Copying CA crt file into container and adding it as a trusted CA"
-  # cant scp to /usr/local/share/ca-certificates because we can't ssh as root. copy to ubuntu home dir and copy over in add-ca-cert.bash script
-  scp -o "StrictHostKeyChecking no" $crt_file ubuntu@$container_ip:/home/ubuntu/
-  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE} MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE} bash -s < add-ca-cert.bash
+  base_filename=$(basename $crt_file)
+  lxc file push $crt_file $MAAS_CONTAINER_NAME/usr/local/share/ca-certificates/$base_filename
+  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE} MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE} base_filename=${base_filename} bash -s < add-ca-cert.bash $base_filename
 }
 
 run() {
