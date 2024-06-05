@@ -1,0 +1,14 @@
+config:
+  dns.domain: maas-ipv6
+  ipv4.address: none
+  ipv6.address: fd42:be3f:b08a:3d6c::1/64
+  ipv6.nat: "true"
+  ipv6.dhcp: "false"
+description: "An IPv6 only network"
+name: maas-ipv6
+type: bridge
+used_by: []
+managed: true
+status: Created
+locations:
+- none

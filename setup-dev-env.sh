@@ -154,6 +154,42 @@ status: Created
 locations:
 - none
 __EOF
+
+  lxc network create maas-ipv6
+  cat << __EOF | lxc network edit maas-ipv6
+config:
+  ipv4.address: none
+  ipv6.address: ${MAAS_IPV6_IP_RANGE}/64
+  ipv6.dhcp: "false"
+  ipv6.nat: "true"
+description: "An IPv6 only network"
+name: maas-ipv6
+type: bridge
+used_by: []
+managed: true
+status: Created
+locations:
+- none
+__EOF
+
+  lxc network create maas-dual-stack
+  cat << __EOF | lxc network edit maas-dual-stack
+config:
+  ipv4.address: ${MAAS_DUAL_STACK_IPV4_RANGE}/24
+  ipv4.nat: "true"
+  ipv4.dhcp: "false"
+  ipv6.address: ${MAAS_DUAL_STACK_IPV6_RANGE}/64
+  ipv6.nat: "true"
+  ipv6.dhcp: "false"
+description: "A network for both IPv4 and IPv6"
+name: maas-dual-stack
+type: bridge
+used_by: []
+managed: true
+status: Created
+locations:
+- none
+__EOF
   echo "..done"
   echo
 
