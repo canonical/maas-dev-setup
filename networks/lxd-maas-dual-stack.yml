@@ -1,0 +1,16 @@
+config:
+  dns.domain: maas-dual-stack
+  ipv4.address: 10.30.0.1/24
+  ipv4.dhcp: "false"
+  ipv4.nat: "true"
+  ipv6.address: fd42:be3f:b08b:3d6d::1/64
+  ipv6.nat: "true"
+  ipv6.dhcp: "false"
+description: "A dual stack (IPv4 and IPv6) network"
+name: maas-dual-stack
+type: bridge
+used_by: []
+managed: true
+status: Created
+locations:
+- none

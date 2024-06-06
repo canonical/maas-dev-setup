@@ -11,8 +11,11 @@ container_ip=$(hostname -I | cut -d' ' -f1)
 gateway_ip=$(hostname -I | cut -d' ' -f1)
 control_network_prefix=${MAAS_CONTROL_IP_RANGE%.*}
 kvm_network_prefix=${MAAS_MANAGEMENT_IP_RANGE%.*}
+ipv6_network_prefix=${MAAS_IPV6_IP_RANGE%.*}
+dual_stack_ipv4_prefix=${MAAS_DUAL_STACK_IPV4_RANGE%.*}
+dual_stack_ipv6_prefix=${MAAS_DUAL_STACK_IPV6_RANGE%.*}
 
-echo "${container_ip} ${gateway_ip} ${control_network_prefix} ${kvm_network_prefix}"
+echo "${container_ip} ${gateway_ip} ${control_network_prefix} ${kvm_network_prefix} ${ipv6_network_prefix} ${dual_stack_ipv4_prefix} ${dual_stack_ipv6_prefix}"
 
 echo
 echo "######################################"
@@ -23,7 +26,7 @@ make install-dependencies
 
 echo
 echo "##########################################################"
-echo "Setting up the second interface (no dhcp one) to talk home"
+echo "Setting up the secondary interface (no dhcp ones) to talk home"
 sudo tee /etc/netplan/99-maas-kvm-net.yaml <<EOF
 network:
     version: 2
@@ -31,6 +34,13 @@ network:
         eth1:
             addresses:
                 - ${kvm_network_prefix}.2/24
+        eth2:
+            addresses:
+                - ${ipv6_network_prefix}:2/64
+        eth3:
+            addresses:
+                - ${dual_stack_ipv4_prefix}.2/24
+                - ${dual_stack_ipv6_prefix}:2/64
 EOF
 sudo netplan apply
 
