@@ -49,7 +49,7 @@ do the following:
 This script was carefully crafted and does not contain any destructive commands.
 Still it may install dependencies that might break your system.
 
-The script was tested on Ubuntu 22:10.
+The script was tested on Ubuntu 22:10 and 24.04 LTS.
 
 ### No, really. What happens?
 
