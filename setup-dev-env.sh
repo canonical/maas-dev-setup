@@ -26,6 +26,8 @@ skip_lxi=0
 skip_lxd=0
 skip_lxn=0
 skip_co=0
+skip_snap=0
+crt_file=""
 
 show_help() {
   echo "Description:"
@@ -56,7 +58,9 @@ show_help() {
   echo "  -si --skip-lxi    skip initializing LXD (lxd auto init)"
   echo "  -sn --skip-lxn    skip setting up LXD profiles and networks"
   echo "  -sl --skip-lxd    skip starting the LXD container"
-  echo "  -sc --skip-checkout skip checking out the code and building the snap tree"
+  echo "  -sc --skip-checkout skip checking out the code"
+  echo "  -ss --skip-snap   skip building the snap tree"
+  echo "  -c  --ca-crt      add the given .crt (PEM format) file to the trusted CAs in the lxd container" 
   echo ""
   echo "Note:"
   echo "  If you installed maas before you likely want to run: ./$0 -su -sd -sv --ok"
@@ -107,8 +111,12 @@ setup_code() {
   fi
   echo "..done"
   echo
+}
+
+make_snap_tree() {
   echo "########################"
   echo "Setting up the snap tree"
+  cd ${maas_src}
   make snap-tree
   echo "..done"
   echo
@@ -219,6 +227,20 @@ configure_container() {
   ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE} MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE} bash -s < setup-region-via-ssh.bash
 }
 
+add_ca_crt(){
+  cd ${script_dir}
+  container_ip=$(lxc list -c4 --format csv ${MAAS_CONTAINER_NAME} | grep "${control_network_prefix}"| cut -d' ' -f1)
+  echo "################################################################"
+  if ! test -f $crt_file; then
+    echo "ERROR: CA crt file does not exist."
+    exit 1
+  fi
+  echo "Copying CA crt file into container and adding it as a trusted CA"
+  base_filename=$(basename $crt_file)
+  lxc file push $crt_file $MAAS_CONTAINER_NAME/usr/local/share/ca-certificates/$base_filename
+  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE} MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE} base_filename=${base_filename} bash -s < add-ca-cert.bash $base_filename
+}
+
 run() {
   if [ ${skip_ufw} -ne 1 ]; then
     disable_ufw
@@ -247,11 +269,20 @@ run() {
   if [ ${skip_co} -ne 1 ]; then
     setup_code
   else
-    echo "Skipping code checkout and snap building"
+    echo "Skipping code checkout"
+    echo ""
+  fi
+  if [ ${skip_snap} -ne 1 ]; then
+    make_snap_tree
+  else
+    echo "Skipping making snap tree"
     echo ""
   fi
   if [ ${skip_lxd} -ne 1 ]; then
     start_container
+  fi 
+  if [ ! -z "${crt_file}" ]; then
+    add_ca_crt
   fi
   configure_container
 }
@@ -286,6 +317,13 @@ while :; do
           ;;
       -sc|--skip-checkout)
           skip_co=1
+          ;;
+      -ss|--skip-snap)
+          skip_snap=1
+          ;;
+      -c|--ca-crt)
+          crt_file=$2
+          shift
           ;;
       -?*)
           printf 'WARN: Unknown option: %s\n' "$1" >&2 # Too dangerous, exit and show help

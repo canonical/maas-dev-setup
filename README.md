@@ -68,3 +68,11 @@ Basically the script mimics the steps described in [this discourse post](https:/
 The script will stop on any error, so please be sure to skip stages, if you have already done them.
 
 You can skip some of those stages using the `-sX` arguments. Run `./setup-dev-env.sh --help` to see your options.
+
+## Adding an SSL certificate to the trusted CA's
+
+If you need MAAS to accept a self-signed SSL certificate, you must add the certificate (in PEM format) to the trusted CAs within the lxd container. You can do this with the `-c` or `--ca-crt` option, as such:
+
+```bash
+./setup-dev-env.sh --ok -c /path/to/cert.crt
+```
