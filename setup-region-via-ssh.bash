@@ -11,9 +11,9 @@ container_ip=$(hostname -I | cut -d' ' -f1)
 gateway_ip=$(hostname -I | cut -d' ' -f1)
 control_network_prefix=${MAAS_CONTROL_IP_RANGE%.*}
 kvm_network_prefix=${MAAS_MANAGEMENT_IP_RANGE%.*}
-ipv6_network_prefix=${MAAS_IPV6_IP_RANGE%.*}
+ipv6_network_prefix=${MAAS_IPV6_IP_RANGE%:*}
 dual_stack_ipv4_prefix=${MAAS_DUAL_STACK_IPV4_RANGE%.*}
-dual_stack_ipv6_prefix=${MAAS_DUAL_STACK_IPV6_RANGE%.*}
+dual_stack_ipv6_prefix=${MAAS_DUAL_STACK_IPV6_RANGE%:*}
 
 echo "${container_ip} ${gateway_ip} ${control_network_prefix} ${kvm_network_prefix} ${ipv6_network_prefix} ${dual_stack_ipv4_prefix} ${dual_stack_ipv6_prefix}"
 
