@@ -90,7 +90,15 @@ sudo maas createadmin --username maas --password maas --email maas@example.com
 echo
 echo "###########################"
 echo "Login using admin profile"
-maas login admin "http://${container_ip}:5240/MAAS/api/2.0/" $(sudo maas apikey --username=maas)
+declare -i maas_up=1
+while [ $maas_up -ne 0 ]; do
+  maas login admin "http://${container_ip}:5240/MAAS/api/2.0/" $(sudo maas apikey --username=maas);
+  maas_up=$?
+  if [ $maas_up -ne 0 ]; then
+    echo "Retrying in 5 seconds..."
+    sleep 5
+  fi
+done
 
 echo
 echo "###############################"
