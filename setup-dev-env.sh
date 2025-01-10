@@ -247,7 +247,7 @@ EOF
 start_container() {
   echo "##################################################################"
   echo "Setting up MAAS development container named ${MAAS_CONTAINER_NAME}"
-  lxc launch ubuntu:jammy ${MAAS_CONTAINER_NAME} -p default -p ${MAAS_CONTAINER_NAME}
+  lxc launch ubuntu:${UBUNTU_VERSION} ${MAAS_CONTAINER_NAME} -p default -p ${MAAS_CONTAINER_NAME}
   echo "..waiting for container to be ready.."
   lxc exec ${MAAS_CONTAINER_NAME} -- cloud-init status --wait
   echo "..done"
