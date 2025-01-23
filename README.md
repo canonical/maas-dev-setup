@@ -10,6 +10,7 @@ Think of this as a one click installer.
 * Ubuntu (maybe Debian)
 * `sudo` and the ability to run commands as root
 * To use MAAS a decent amount of RAM would be good (> 8GB)
+* An authentication key setup on Github for your local machine (see [GitHub docs](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account))
 
 In the best case LXD is not configured on your system. However, if you have running
 containers and network configurations, this is not ab problem but make sure
