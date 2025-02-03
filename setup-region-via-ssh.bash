@@ -92,7 +92,7 @@ echo "###########################"
 echo "Login using admin profile"
 declare -i maas_up=1
 while [ $maas_up -ne 0 ]; do
-  # Check if the MAAS API is up before attemtping to
+  # Check if the MAAS API is up before attempting to login
   if curl -sf "http://${container_ip}:5240/MAAS/api/2.0/version/" > /dev/null 2>&1; then
     maas login admin "http://${container_ip}:5240/MAAS/api/2.0/" $(sudo maas apikey --username=maas);
     maas_up=$?
