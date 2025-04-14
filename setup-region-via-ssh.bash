@@ -46,9 +46,9 @@ sudo netplan apply
 
 echo
 echo "############################################"
-echo "Disabling postgres, nginx and dhcp services."
-sudo systemctl stop named postgresql nginx isc-dhcp-server
-sudo systemctl disable named postgresql nginx isc-dhcp-server
+echo "Disabling postgres and dhcp services."
+sudo systemctl stop named postgresql isc-dhcp-server
+sudo systemctl disable named postgresql isc-dhcp-server
 
 echo
 echo "#################################"
