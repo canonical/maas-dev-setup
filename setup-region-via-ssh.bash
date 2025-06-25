@@ -47,8 +47,12 @@ sudo netplan apply
 echo
 echo "############################################"
 echo "Disabling postgres, nginx and dhcp services."
-sudo systemctl stop named postgresql nginx isc-dhcp-server
-sudo systemctl disable named postgresql nginx isc-dhcp-server
+sudo systemctl stop named postgresql isc-dhcp-server
+sudo systemctl disable named postgresql isc-dhcp-server
+
+# the nginx dependency has been removed between 3.6 and 3.7
+# https://github.com/canonical/maas/commit/ab68c2d7d0847692510a7d29b06e0deeb26dc37a
+dpkg --list | grep nginx-core && sudo systemctl stop nginx && systemctl disable nginx
 
 echo
 echo "#################################"
