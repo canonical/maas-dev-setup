@@ -20,7 +20,7 @@ echo "${container_ip} ${gateway_ip} ${control_network_prefix} ${kvm_network_pref
 echo
 echo "######################################"
 echo "Installing make and MAAS dependencies."
-sudo apt-get install make
+sudo apt-get install make linux-tools-$(uname -r) linux-cloud-tools-$(uname -r) -y
 cd /work
 make install-dependencies
 
