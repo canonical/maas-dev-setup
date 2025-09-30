@@ -266,6 +266,7 @@ configure_container() {
       MAAS_IPV6_IP_RANGE=${MAAS_IPV6_IP_RANGE}\
       MAAS_DUAL_STACK_IPV4_RANGE=${MAAS_DUAL_STACK_IPV4_RANGE}\
       MAAS_DUAL_STACK_IPV6_RANGE=${MAAS_DUAL_STACK_IPV6_RANGE}\
+      MAAS_RELEASE_VERSION=${MAAS_RELEASE_VERSION}\
       bash -s < setup-region-via-ssh.bash
 }
 
