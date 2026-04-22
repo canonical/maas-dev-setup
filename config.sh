@@ -36,12 +36,43 @@ MAAS_KVM_NETWORK="maas-kvm-${MAAS_INSTANCE}"
 MAAS_IPV6_NETWORK="maas-ip6-${MAAS_INSTANCE}"
 MAAS_DUAL_STACK_NETWORK="maas-ds-${MAAS_INSTANCE}"
 
-# The netmasks for the LXD networks you would like to use.
-# Note:
-#   netmasks will be set to /24 and IP_RANGEs have to end with .1 / ::1
-#   Each instance MUST use different IP ranges to avoid subnet conflicts.
-MAAS_CONTROL_IP_RANGE="10.10.0.1"
-MAAS_MANAGEMENT_IP_RANGE="10.20.0.1"
-MAAS_IPV6_IP_RANGE="fd42:be3f:b08a:3d6c::1"
-MAAS_DUAL_STACK_IPV4_RANGE="10.30.0.1"
-MAAS_DUAL_STACK_IPV6_RANGE="fd42:be3f:b08b:3d6d::1"
+# IP ranges are automatically derived from MAAS_INSTANCE so that different instances
+# do not conflict with each other.
+#
+# Derivation rules for the third IPv4 octet:
+#   - Numeric MAAS_INSTANCE (e.g. a MAAS version like "36", "310", "40"):
+#       Split into the first digit (major) and the remaining digits (minor).
+#       Octet = major * 30 + minor  (treats the version as a pair of base 30 digits).
+#       Examples: "36" → 3*30+6 = 96,  "310" → 3*30+10 = 100,  "40" → 4*30+0 = 120.
+#       This keeps different major versions well-separated and is future-proof as
+#       minor versions grow beyond 9.
+#   - Non-numeric MAAS_INSTANCE (e.g. "main", "dev"):
+#       A deterministic cksum hash maps it to [1, 253].
+#       Note: hash-based derivation is best-effort; two distinct non-numeric instances
+#       may collide. Prefer numeric (version-style) instance names when possible.
+#
+# To override any range, set the variable explicitly after this block.
+case "${MAAS_INSTANCE}" in
+*[!0-9]*)
+  _instance_octet=$(printf '%s' "${MAAS_INSTANCE}" | cksum | awk '{print ($1 % 253) + 1}')
+  ;;
+*)
+  _major="${MAAS_INSTANCE%"${MAAS_INSTANCE#?}"}" # first character (major version digit)
+  _minor="${MAAS_INSTANCE#?}"                    # remaining characters (minor version)
+  : "${_minor:=0}"
+  _instance_octet=$((_major * 30 + _minor))
+  ;;
+esac
+if [ "${_instance_octet}" -lt 1 ] || [ "${_instance_octet}" -gt 253 ]; then
+  echo "ERROR: derived IP octet ${_instance_octet} for MAAS_INSTANCE='${MAAS_INSTANCE}' is out of range [1, 253]."
+  echo "  Choose a different MAAS_INSTANCE value."
+  exit 1
+fi
+_instance_hex=$(printf '%04x' "${_instance_octet}")
+
+# Note: netmasks will be set to /24 (IPv4) or /64 (IPv6); IP_RANGEs must end with .1 / ::1.
+MAAS_CONTROL_IP_RANGE="10.10.${_instance_octet}.1"
+MAAS_MANAGEMENT_IP_RANGE="10.20.${_instance_octet}.1"
+MAAS_IPV6_IP_RANGE="fd42:${_instance_hex}:b08a:3d6c::1"
+MAAS_DUAL_STACK_IPV4_RANGE="10.30.${_instance_octet}.1"
+MAAS_DUAL_STACK_IPV6_RANGE="fd42:${_instance_hex}:b08b:3d6d::1"
