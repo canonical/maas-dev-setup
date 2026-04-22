@@ -10,6 +10,13 @@ set -e
 # source config and setup variables
 . ./config.sh
 
+# Validate MAAS_INSTANCE: max 5 chars, required for kernel bridge name limit (15 chars)
+if [ ${#MAAS_INSTANCE} -gt 5 ]; then
+  echo "ERROR: MAAS_INSTANCE must be at most 5 characters (got: '${MAAS_INSTANCE}')."
+  echo "  Kernel bridge names are limited to 15 chars; 'maas-ctrl-' occupies 10 of them."
+  exit 1
+fi
+
 # get absolute path for lxd
 maas_src=$(readlink -f ${MAAS_SRC})
 # see https://stackoverflow.com/questions/29832037/how-to-get-script-directory-in-posix-sh
@@ -127,17 +134,20 @@ setup_lxd() {
   echo "Setting up LXD networks"
   cd ${script_dir}
 
-  lxc network create maas-ctrl
-  cat << __EOF | lxc network edit maas-ctrl
+  if lxc network show ${MAAS_CTRL_NETWORK} >/dev/null 2>&1; then
+    echo "Network ${MAAS_CTRL_NETWORK} already exists, skipping."
+  else
+    lxc network create ${MAAS_CTRL_NETWORK}
+    cat << __EOF | lxc network edit ${MAAS_CTRL_NETWORK}
 config:
-  dns.domain: maas-ctrl
+  dns.domain: ${MAAS_CTRL_NETWORK}
   ipv4.address: ${MAAS_CONTROL_IP_RANGE}/24
   ipv4.dhcp: "true"
   ipv4.dhcp.ranges: ${control_network_prefix}.16-${control_network_prefix}.31
   ipv4.nat: "true"
   ipv6.address: none
 description: ""
-name: maas-ctrl
+name: ${MAAS_CTRL_NETWORK}
 type: bridge
 used_by: []
 managed: true
@@ -145,16 +155,20 @@ status: Created
 locations:
 - none
 __EOF
+  fi
 
-  lxc network create maas-kvm
-  cat << __EOF | lxc network edit maas-kvm
+  if lxc network show ${MAAS_KVM_NETWORK} >/dev/null 2>&1; then
+    echo "Network ${MAAS_KVM_NETWORK} already exists, skipping."
+  else
+    lxc network create ${MAAS_KVM_NETWORK}
+    cat << __EOF | lxc network edit ${MAAS_KVM_NETWORK}
 config:
   ipv4.address: ${MAAS_MANAGEMENT_IP_RANGE}/24
   ipv4.dhcp: "false"
   ipv4.nat: "true"
   ipv6.address: none
 description: ""
-name: maas-kvm
+name: ${MAAS_KVM_NETWORK}
 type: bridge
 used_by: []
 managed: true
@@ -162,16 +176,20 @@ status: Created
 locations:
 - none
 __EOF
+  fi
 
-  lxc network create maas-ipv6
-  cat << __EOF | lxc network edit maas-ipv6
+  if lxc network show ${MAAS_IPV6_NETWORK} >/dev/null 2>&1; then
+    echo "Network ${MAAS_IPV6_NETWORK} already exists, skipping."
+  else
+    lxc network create ${MAAS_IPV6_NETWORK}
+    cat << __EOF | lxc network edit ${MAAS_IPV6_NETWORK}
 config:
   ipv4.address: none
   ipv6.address: ${MAAS_IPV6_IP_RANGE}/64
   ipv6.dhcp: "false"
   ipv6.nat: "true"
 description: "An IPv6 only network"
-name: maas-ipv6
+name: ${MAAS_IPV6_NETWORK}
 type: bridge
 used_by: []
 managed: true
@@ -179,9 +197,13 @@ status: Created
 locations:
 - none
 __EOF
+  fi
 
-  lxc network create maas-dual-stack
-  cat << __EOF | lxc network edit maas-dual-stack
+  if lxc network show ${MAAS_DUAL_STACK_NETWORK} >/dev/null 2>&1; then
+    echo "Network ${MAAS_DUAL_STACK_NETWORK} already exists, skipping."
+  else
+    lxc network create ${MAAS_DUAL_STACK_NETWORK}
+    cat << __EOF | lxc network edit ${MAAS_DUAL_STACK_NETWORK}
 config:
   ipv4.address: ${MAAS_DUAL_STACK_IPV4_RANGE}/24
   ipv4.nat: "true"
@@ -190,7 +212,7 @@ config:
   ipv6.nat: "true"
   ipv6.dhcp: "false"
 description: "A network for both IPv4 and IPv6"
-name: maas-dual-stack
+name: ${MAAS_DUAL_STACK_NETWORK}
 type: bridge
 used_by: []
 managed: true
@@ -198,19 +220,32 @@ status: Created
 locations:
 - none
 __EOF
+  fi
   echo "..done"
   echo
 
-  echo "################################"
-  echo "Setting LXD HTTPS address to 8443"
-  lxc config set core.https_address [::]:8443
+  echo "#######################################"
+  echo "Checking LXD HTTPS address configuration"
+  current_https=$(lxc config get core.https_address 2>/dev/null)
+  if [ -z "${current_https}" ]; then
+    echo "Setting LXD HTTPS address to [::]:8443"
+    lxc config set core.https_address [::]:8443
+  elif [ "${current_https}" = "[::]:8443" ]; then
+    echo "LXD HTTPS address already set to [::]:8443, skipping."
+  else
+    echo "WARNING: LXD HTTPS address is '${current_https}', not changing."
+    echo "  MAAS may not be able to reach the host LXD if this is not reachable."
+  fi
   echo "..done"
   echo
 
   echo "#######################"
   echo "Setting up LXD profiles"
-  lxc profile create ${MAAS_CONTAINER_NAME}
-  cat <<EOF | lxc profile edit ${MAAS_CONTAINER_NAME}
+  if lxc profile show ${MAAS_CONTAINER_NAME} >/dev/null 2>&1; then
+    echo "Profile ${MAAS_CONTAINER_NAME} already exists, skipping."
+  else
+    lxc profile create ${MAAS_CONTAINER_NAME}
+    cat <<EOF | lxc profile edit ${MAAS_CONTAINER_NAME}
 config:
     raw.idmap: |
         uid $(id -u) 1000
@@ -234,12 +269,21 @@ devices:
     eth0:
         type: nic
         name: eth0
-        network: maas-ctrl
+        network: ${MAAS_CTRL_NETWORK}
     eth1:
         type: nic
         name: eth1
-        network: maas-kvm
+        network: ${MAAS_KVM_NETWORK}
+    eth2:
+        type: nic
+        name: eth2
+        network: ${MAAS_IPV6_NETWORK}
+    eth3:
+        type: nic
+        name: eth3
+        network: ${MAAS_DUAL_STACK_NETWORK}
 EOF
+  fi
   echo "..done"
   echo
 }
@@ -247,9 +291,13 @@ EOF
 start_container() {
   echo "##################################################################"
   echo "Setting up MAAS development container named ${MAAS_CONTAINER_NAME}"
-  lxc launch ubuntu:${UBUNTU_VERSION} ${MAAS_CONTAINER_NAME} -p default -p ${MAAS_CONTAINER_NAME}
-  echo "..waiting for container to be ready.."
-  lxc exec ${MAAS_CONTAINER_NAME} -- cloud-init status --wait
+  if lxc info ${MAAS_CONTAINER_NAME} >/dev/null 2>&1; then
+    echo "Container ${MAAS_CONTAINER_NAME} already exists, skipping launch."
+  else
+    lxc launch ubuntu:${UBUNTU_VERSION} ${MAAS_CONTAINER_NAME} -p default -p ${MAAS_CONTAINER_NAME}
+    echo "..waiting for container to be ready.."
+    lxc exec ${MAAS_CONTAINER_NAME} -- cloud-init status --wait
+  fi
   echo "..done"
   echo
 }
@@ -261,6 +309,7 @@ configure_container() {
   echo "SSHing into ${MAAS_CONTAINER_NAME} (${container_ip}) development and setting it up"
   # could pass vars in there with ssh ubuntu@${container_ip} 'bash -s' < setup-region-via-ssh.sh var1 var2 ...
   ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip}\
+      MAAS_INSTANCE=${MAAS_INSTANCE}\
       MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE}\
       MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE}\
       MAAS_IPV6_IP_RANGE=${MAAS_IPV6_IP_RANGE}\
@@ -281,6 +330,7 @@ add_ca_crt(){
   base_filename=$(basename $crt_file)
   lxc file push $crt_file $MAAS_CONTAINER_NAME/usr/local/share/ca-certificates/$base_filename
   ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip}\
+      MAAS_INSTANCE=${MAAS_INSTANCE}\
       MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE}\
       MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE}\
       MAAS_IPV6_IP_RANGE=${MAAS_IPV6_IP_RANGE}\

@@ -25,8 +25,28 @@ that the following names/network ranges are not yet used by LXD (or change value
 `config.sh`).
 
 * a profile in LXDs default project called `$MAAS_CONTAINER_NAME`
-* two networks named `maas-ctrl` and `maas-kvm`
-  * these networks will use the IP ranges `$MAAS_CONTROL_IP_RANGE` and `MAAS_MANAGEMENT_IP_RANGE`
+* four networks named after `$MAAS_CTRL_NETWORK`, `$MAAS_KVM_NETWORK`, `$MAAS_IPV6_NETWORK`, and `$MAAS_DUAL_STACK_NETWORK`
+  * these networks will use the IP ranges `$MAAS_CONTROL_IP_RANGE`, `$MAAS_MANAGEMENT_IP_RANGE`, and the IPv6/dual-stack ranges
+
+
+## Running multiple MAAS versions simultaneously
+
+Each MAAS version gets its own isolated set of LXD resources. Set `MAAS_INSTANCE` in
+`config.sh` to a short unique identifier (max 5 characters) before running the script.
+All container, profile, and network names are derived from it.
+
+You also **must** assign different IP ranges per instance to avoid subnet conflicts.
+Use the skip flags (`-su -sd -si`) to skip one-time steps when setting up additional instances:
+
+```sh
+# First instance (e.g. MAAS 3.6)
+# In config.sh: MAAS_INSTANCE="36", MAAS_CONTROL_IP_RANGE="10.10.36.1", MAAS_MANAGEMENT_IP_RANGE="10.20.36.1"
+./setup-dev-env.sh --ok
+
+# Second instance (e.g. MAAS 3.7)
+# In config.sh: MAAS_INSTANCE="37", MAAS_CONTROL_IP_RANGE="10.10.37.1", MAAS_MANAGEMENT_IP_RANGE="10.20.37.1"
+./setup-dev-env.sh --ok -su -sd -si
+```
 
 
 ## How to run this script?

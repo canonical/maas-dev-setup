@@ -1,3 +1,15 @@
+# Reference template for the MAAS development LXD profile.
+# This file is NOT used by setup-dev-env.sh (the profile is generated inline there).
+# It is provided for manual use, e.g.:
+#   lxc profile create maas-<INSTANCE>
+#   lxc profile edit maas-<INSTANCE> < profiles/maas-region-profile.yml
+#
+# Replace all REPLACE_WITH_* placeholders before applying:
+#   REPLACE_WITH_YOUR_UID   -> output of: id -u
+#   REPLACE_WITH_YOUR_GID   -> output of: id -g
+#   REPLACE_WITH_SSH_KEY    -> your public SSH key (e.g. contents of ~/.ssh/id_rsa.pub)
+#   REPLACE_WITH_MAAS_SOURCE -> absolute path to your MAAS source checkout
+#   REPLACE_WITH_INSTANCE   -> the MAAS_INSTANCE value from config.sh (e.g. "36", "dev")
 config:
     raw.idmap: |
         REPLACE_WITH_YOUR_UID
@@ -21,4 +33,16 @@ devices:
     eth0:
         type: nic
         name: eth0
-        network: maas-ctrl
+        network: maas-ctrl-REPLACE_WITH_INSTANCE
+    eth1:
+        type: nic
+        name: eth1
+        network: maas-kvm-REPLACE_WITH_INSTANCE
+    eth2:
+        type: nic
+        name: eth2
+        network: maas-ip6-REPLACE_WITH_INSTANCE
+    eth3:
+        type: nic
+        name: eth3
+        network: maas-ds-REPLACE_WITH_INSTANCE
