@@ -14,8 +14,10 @@ MAAS_INSTANCE="dev"
 # These are currently noble for 3.6+, jammy for 3.4, 3.5
 UBUNTU_VERSION="noble"
 
-# This assumes that your maas source should be installed next to this project.
-MAAS_SRC="../maas"
+# This assumes that your maas source is installed next to this project,
+# in a directory named after the instance (e.g. ../maas-38 for MAAS_INSTANCE="38").
+# Each instance needs its own checkout so their snap trees don't clobber each other.
+MAAS_SRC="../maas-${MAAS_INSTANCE}"
 
 # This is the name of container MAAS will be running in
 # as well as the name for the related LXD profile

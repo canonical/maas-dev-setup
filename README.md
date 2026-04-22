@@ -33,18 +33,21 @@ that the following names/network ranges are not yet used by LXD (or change value
 
 Each MAAS version gets its own isolated set of LXD resources. Set `MAAS_INSTANCE` in
 `config.sh` to a short unique identifier (max 5 characters) before running the script.
-All container, profile, and network names are derived from it.
+All container, profile, network names, IP ranges, **and source directory** are derived from it automatically.
 
-You also **must** assign different IP ranges per instance to avoid subnet conflicts.
+Each instance clones MAAS into a separate directory (`../maas-<INSTANCE>`), so their
+snap trees never conflict. IP ranges are also derived automatically — no manual range
+assignment needed.
+
 Use the skip flags (`-su -sd -si`) to skip one-time steps when setting up additional instances:
 
 ```sh
-# First instance (e.g. MAAS 3.6)
-# In config.sh: MAAS_INSTANCE="36", MAAS_CONTROL_IP_RANGE="10.10.36.1", MAAS_MANAGEMENT_IP_RANGE="10.20.36.1"
+# First instance (e.g. MAAS 3.6) — clone goes to ../maas-36
+# In config.sh: MAAS_INSTANCE="36"
 ./setup-dev-env.sh --ok
 
-# Second instance (e.g. MAAS 3.7)
-# In config.sh: MAAS_INSTANCE="37", MAAS_CONTROL_IP_RANGE="10.10.37.1", MAAS_MANAGEMENT_IP_RANGE="10.20.37.1"
+# Second instance (e.g. MAAS 3.8) — clone goes to ../maas-38
+# In config.sh: MAAS_INSTANCE="38"
 ./setup-dev-env.sh --ok -su -sd -si
 ```
 
@@ -68,7 +71,7 @@ do the following:
 * remove everything from LXD (e.g. containers, profiles, networks, ...) for all projects
   * you can use [LXD Delete All](https://github.com/tmerten/lxd-delete-all) for this job
 * remove your [libvirt](https://libvirt.org/) network definitions (`virsh net-destroy` and `virsh net-undefine` for all networks)
-* delete (or move) your current maas source code
+* delete (or move) your MAAS source code (e.g. `../maas-<INSTANCE>`)
 
 ## What happens if I run this script?
 
