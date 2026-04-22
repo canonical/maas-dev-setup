@@ -11,9 +11,9 @@ MAAS_INSTANCE="latest"
 
 # Ubuntu version is derived from MAAS_INSTANCE. Override here if needed.
 case "${MAAS_INSTANCE}" in
-  latest|38) UBUNTU_VERSION="resolute" ;;
-  36|37)     UBUNTU_VERSION="noble"    ;;
-  *)         UBUNTU_VERSION="resolute" ;;
+latest | 38) UBUNTU_VERSION="resolute" ;;
+36 | 37) UBUNTU_VERSION="noble" ;;
+*) UBUNTU_VERSION="resolute" ;;
 esac
 
 # "latest" uses no suffix so all names are unqualified (e.g. "maas", "maas-ctrl").
@@ -32,7 +32,7 @@ MAAS_SRC="../maas${_instance_suffix}"
 
 # This is the name of container MAAS will be running in
 # as well as the name for the related LXD profile
-MAAS_CONTAINER_NAME="maas${_instance_suffix}"
+MAAS_CONTAINER_NAME="maas-dev${_instance_suffix}"
 
 # If you enter a launchpad-id, the script can automatically setup your local fork
 # and retrieve your public ssh key from launchpad
