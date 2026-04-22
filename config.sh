@@ -4,9 +4,9 @@
 
 # Instance name used to namespace all LXD resources (container, profile, networks, VM host).
 # This allows running multiple MAAS versions side by side without conflicts.
-# Must be at most 5 alphanumeric/hyphen characters (kernel bridge name limit of 15 chars).
-# Examples: "36" for MAAS 3.6, "37" for MAAS 3.7, "main" for main branch.
-MAAS_INSTANCE="dev"
+# Must be a numeric MAAS version string, max 5 digits (kernel bridge name limit of 15 chars).
+# Examples: "36" for MAAS 3.6, "38" for MAAS 3.8, "310" for MAAS 3.10.
+MAAS_INSTANCE="37"
 
 # Depending on the MAAS version, that you are running,
 # you should pick the appropriate ubuntu version.
@@ -41,22 +41,17 @@ MAAS_DUAL_STACK_NETWORK="maas-ds-${MAAS_INSTANCE}"
 # IP ranges are automatically derived from MAAS_INSTANCE so that different instances
 # do not conflict with each other.
 #
-# Derivation rules for the third IPv4 octet:
-#   - Numeric MAAS_INSTANCE (e.g. a MAAS version like "36", "310", "40"):
-#       Split into the first digit (major) and the remaining digits (minor).
-#       Octet = major * 30 + minor  (treats the version as a pair of base 30 digits).
-#       Examples: "36" → 3*30+6 = 96,  "310" → 3*30+10 = 100,  "40" → 4*30+0 = 120.
-#       This keeps different major versions well-separated and is future-proof as
-#       minor versions grow beyond 9.
-#   - Non-numeric MAAS_INSTANCE (e.g. "main", "dev"):
-#       A deterministic cksum hash maps it to [1, 253].
-#       Note: hash-based derivation is best-effort; two distinct non-numeric instances
-#       may collide. Prefer numeric (version-style) instance names when possible.
+# MAAS_INSTANCE must be a numeric MAAS version string (e.g. "36", "38", "310", "40").
+# The third IPv4 octet is computed as: major * 30 + minor, where the first digit is
+# the major version and the remaining digits are the minor version.
+# Examples: "36" → 3*30+6 = 96,  "310" → 3*30+10 = 100,  "40" → 4*30+0 = 120.
 #
 # To override any range, set the variable explicitly after this block.
 case "${MAAS_INSTANCE}" in
 *[!0-9]*)
-  _instance_octet=$(printf '%s' "${MAAS_INSTANCE}" | cksum | awk '{print ($1 % 253) + 1}')
+  echo "ERROR: MAAS_INSTANCE must be a numeric MAAS version string (e.g. \"36\", \"38\", \"310\")."
+  echo "  Got: '${MAAS_INSTANCE}'"
+  exit 1
   ;;
 *)
   _major="${MAAS_INSTANCE%"${MAAS_INSTANCE#?}"}" # first character (major version digit)

@@ -32,7 +32,7 @@ that the following names/network ranges are not yet used by LXD (or change value
 ## Running multiple MAAS versions simultaneously
 
 Each MAAS version gets its own isolated set of LXD resources. Set `MAAS_INSTANCE` in
-`config.sh` to a short unique identifier (max 5 characters) before running the script.
+`config.sh` to the numeric MAAS version string (max 5 digits, e.g. `"38"` for MAAS 3.8).
 All container, profile, network names, IP ranges, **and source directory** are derived from it automatically.
 
 Each instance clones MAAS into a separate directory (`../maas-<INSTANCE>`), so their

@@ -10,9 +10,9 @@ set -e
 # source config and setup variables
 . ./config.sh
 
-# Validate MAAS_INSTANCE: max 5 chars, required for kernel bridge name limit (15 chars)
+# Validate MAAS_INSTANCE: max 5 digits, required for kernel bridge name limit (15 chars).
 if [ ${#MAAS_INSTANCE} -gt 5 ]; then
-  echo "ERROR: MAAS_INSTANCE must be at most 5 characters (got: '${MAAS_INSTANCE}')."
+  echo "ERROR: MAAS_INSTANCE must be at most 5 digits (got: '${MAAS_INSTANCE}')."
   echo "  Kernel bridge names are limited to 15 chars; 'maas-ctrl-' occupies 10 of them."
   exit 1
 fi
