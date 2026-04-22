@@ -6,7 +6,7 @@
 # This allows running multiple MAAS versions side by side without conflicts.
 # Must be a numeric MAAS version string, max 5 digits (kernel bridge name limit of 15 chars).
 # Examples: "36" for MAAS 3.6, "38" for MAAS 3.8, "310" for MAAS 3.10.
-MAAS_INSTANCE="37"
+MAAS_INSTANCE="38"
 
 # Depending on the MAAS version, that you are running,
 # you should pick the appropriate ubuntu version.
@@ -25,7 +25,7 @@ MAAS_CONTAINER_NAME="maas-${MAAS_INSTANCE}"
 
 # If you enter a launchpad-id, the script can automatically setup your local fork
 # and retrieve your public ssh key from launchpad
-MAAS_LAUNCHPAD_ID=""
+MAAS_LAUNCHPAD_ID="aloiziomacedo"
 
 # The LXD project in which this installation should reside
 # Leave empty or set to "default" to use the default project
