@@ -4,24 +4,34 @@
 
 # Instance name used to namespace all LXD resources (container, profile, networks, VM host).
 # This allows running multiple MAAS versions side by side without conflicts.
-# Must be a numeric MAAS version string, max 5 digits (kernel bridge name limit of 15 chars).
-# Examples: "36" for MAAS 3.6, "38" for MAAS 3.8, "310" for MAAS 3.10.
-MAAS_INSTANCE="38"
+# Must be a numeric MAAS version string, max 5 digits (kernel bridge name limit of 15 chars),
+# or the special value "latest" which uses no suffix and the base IP ranges (x.x.0.x).
+# Examples: "36" for MAAS 3.6, "38" for MAAS 3.8, "310" for MAAS 3.10, "latest" for tip.
+MAAS_INSTANCE="latest"
 
 # Depending on the MAAS version, that you are running,
 # you should pick the appropriate ubuntu version.
 #
 # These are currently noble for 3.6+, jammy for 3.4, 3.5
-UBUNTU_VERSION="noble"
+UBUNTU_VERSION="resolute"
+
+# "latest" uses no suffix so all names are unqualified (e.g. "maas", "maas-ctrl").
+# All other instances append "-<MAAS_INSTANCE>" to avoid conflicts.
+if [ "${MAAS_INSTANCE}" = "latest" ]; then
+  _instance_suffix=""
+else
+  _instance_suffix="-${MAAS_INSTANCE}"
+fi
 
 # This assumes that your maas source is installed next to this project,
-# in a directory named after the instance (e.g. ../maas-38 for MAAS_INSTANCE="38").
+# in a directory named after the instance (e.g. ../maas-38 for MAAS_INSTANCE="38",
+# or ../maas for MAAS_INSTANCE="latest").
 # Each instance needs its own checkout so their snap trees don't clobber each other.
-MAAS_SRC="../maas-${MAAS_INSTANCE}"
+MAAS_SRC="../maas${_instance_suffix}"
 
 # This is the name of container MAAS will be running in
 # as well as the name for the related LXD profile
-MAAS_CONTAINER_NAME="maas-${MAAS_INSTANCE}"
+MAAS_CONTAINER_NAME="maas${_instance_suffix}"
 
 # If you enter a launchpad-id, the script can automatically setup your local fork
 # and retrieve your public ssh key from launchpad
@@ -33,23 +43,26 @@ MAAS_LAUNCHPAD_ID="aloiziomacedo"
 
 # LXD network names — derived from MAAS_INSTANCE to avoid conflicts between versions.
 # Shortened base names keep the resulting bridge interface name under the 15-char kernel limit.
-MAAS_CTRL_NETWORK="maas-ctrl-${MAAS_INSTANCE}"
-MAAS_KVM_NETWORK="maas-kvm-${MAAS_INSTANCE}"
-MAAS_IPV6_NETWORK="maas-ip6-${MAAS_INSTANCE}"
-MAAS_DUAL_STACK_NETWORK="maas-ds-${MAAS_INSTANCE}"
+MAAS_CTRL_NETWORK="maas-ctrl${_instance_suffix}"
+MAAS_KVM_NETWORK="maas-kvm${_instance_suffix}"
+MAAS_IPV6_NETWORK="maas-ip6${_instance_suffix}"
+MAAS_DUAL_STACK_NETWORK="maas-ds${_instance_suffix}"
 
 # IP ranges are automatically derived from MAAS_INSTANCE so that different instances
 # do not conflict with each other.
 #
-# MAAS_INSTANCE must be a numeric MAAS version string (e.g. "36", "38", "310", "40").
-# The third IPv4 octet is computed as: major * 30 + minor, where the first digit is
-# the major version and the remaining digits are the minor version.
+# "latest" uses octet 0 (base ranges: 10.10.0.x, 10.20.0.x, etc.).
+# Numeric instances use: major * 30 + minor as the third IPv4 octet, where the first
+# digit is the major version and the remaining digits are the minor version.
 # Examples: "36" → 3*30+6 = 96,  "310" → 3*30+10 = 100,  "40" → 4*30+0 = 120.
 #
 # To override any range, set the variable explicitly after this block.
 case "${MAAS_INSTANCE}" in
+latest)
+  _instance_octet=0
+  ;;
 *[!0-9]*)
-  echo "ERROR: MAAS_INSTANCE must be a numeric MAAS version string (e.g. \"36\", \"38\", \"310\")."
+  echo "ERROR: MAAS_INSTANCE must be a numeric MAAS version string (e.g. \"36\", \"38\", \"310\") or \"latest\"."
   echo "  Got: '${MAAS_INSTANCE}'"
   exit 1
   ;;
@@ -60,8 +73,8 @@ case "${MAAS_INSTANCE}" in
   _instance_octet=$((_major * 30 + _minor))
   ;;
 esac
-if [ "${_instance_octet}" -lt 1 ] || [ "${_instance_octet}" -gt 253 ]; then
-  echo "ERROR: derived IP octet ${_instance_octet} for MAAS_INSTANCE='${MAAS_INSTANCE}' is out of range [1, 253]."
+if [ "${_instance_octet}" -gt 253 ]; then
+  echo "ERROR: derived IP octet ${_instance_octet} for MAAS_INSTANCE='${MAAS_INSTANCE}' is out of range [0, 253]."
   echo "  Choose a different MAAS_INSTANCE value."
   exit 1
 fi
