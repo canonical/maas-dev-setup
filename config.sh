@@ -9,11 +9,12 @@
 # Examples: "36" for MAAS 3.6, "38" for MAAS 3.8, "310" for MAAS 3.10, "latest" for tip.
 MAAS_INSTANCE="latest"
 
-# Depending on the MAAS version, that you are running,
-# you should pick the appropriate ubuntu version.
-#
-# These are currently noble for 3.6+, jammy for 3.4, 3.5
-UBUNTU_VERSION="resolute"
+# Ubuntu version is derived from MAAS_INSTANCE. Override here if needed.
+case "${MAAS_INSTANCE}" in
+  latest|38) UBUNTU_VERSION="resolute" ;;
+  36|37)     UBUNTU_VERSION="noble"    ;;
+  *)         UBUNTU_VERSION="resolute" ;;
+esac
 
 # "latest" uses no suffix so all names are unqualified (e.g. "maas", "maas-ctrl").
 # All other instances append "-<MAAS_INSTANCE>" to avoid conflicts.
