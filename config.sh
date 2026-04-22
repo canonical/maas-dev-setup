@@ -81,6 +81,12 @@ if [ "${_instance_octet}" -gt 253 ]; then
 fi
 _instance_hex=$(printf '%04x' "${_instance_octet}")
 
+# maas-test-db snap channel derived from MAAS_INSTANCE.
+case "${MAAS_INSTANCE}" in
+  latest) MAAS_TEST_DB_CHANNEL="latest/edge" ;;
+  *)      MAAS_TEST_DB_CHANNEL="${_major}.${_minor}/edge" ;;
+esac
+
 # Note: netmasks will be set to /24 (IPv4) or /64 (IPv6); IP_RANGEs must end with .1 / ::1.
 MAAS_CONTROL_IP_RANGE="10.10.${_instance_octet}.1"
 MAAS_MANAGEMENT_IP_RANGE="10.20.${_instance_octet}.1"

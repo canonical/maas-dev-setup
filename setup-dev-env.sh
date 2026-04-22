@@ -309,14 +309,15 @@ configure_container() {
   echo "################################################################"
   echo "SSHing into ${MAAS_CONTAINER_NAME} (${container_ip}) development and setting it up"
   # could pass vars in there with ssh ubuntu@${container_ip} 'bash -s' < setup-region-via-ssh.sh var1 var2 ...
-  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip}\
-      MAAS_INSTANCE=${MAAS_INSTANCE}\
-      MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE}\
-      MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE}\
-      MAAS_IPV6_IP_RANGE=${MAAS_IPV6_IP_RANGE}\
-      MAAS_DUAL_STACK_IPV4_RANGE=${MAAS_DUAL_STACK_IPV4_RANGE}\
-      MAAS_DUAL_STACK_IPV6_RANGE=${MAAS_DUAL_STACK_IPV6_RANGE}\
-      bash -s < setup-region-via-ssh.bash
+  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} \
+    MAAS_INSTANCE=${MAAS_INSTANCE} \
+    MAAS_TEST_DB_CHANNEL=${MAAS_TEST_DB_CHANNEL} \
+    MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE} \
+    MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE} \
+    MAAS_IPV6_IP_RANGE=${MAAS_IPV6_IP_RANGE} \
+    MAAS_DUAL_STACK_IPV4_RANGE=${MAAS_DUAL_STACK_IPV4_RANGE} \
+    MAAS_DUAL_STACK_IPV6_RANGE=${MAAS_DUAL_STACK_IPV6_RANGE} \
+    bash -s <setup-region-via-ssh.bash
 }
 
 add_ca_crt(){
@@ -330,15 +331,16 @@ add_ca_crt(){
   echo "Copying CA crt file into container and adding it as a trusted CA"
   base_filename=$(basename $crt_file)
   lxc file push $crt_file $MAAS_CONTAINER_NAME/usr/local/share/ca-certificates/$base_filename
-  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip}\
-      MAAS_INSTANCE=${MAAS_INSTANCE}\
-      MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE}\
-      MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE}\
-      MAAS_IPV6_IP_RANGE=${MAAS_IPV6_IP_RANGE}\
-      MAAS_DUAL_STACK_IPV4_RANGE=${MAAS_DUAL_STACK_IPV4_RANGE}\
-      MAAS_DUAL_STACK_IPV6_RANGE=${MAAS_DUAL_STACK_IPV6_RANGE}\
-      base_filename=${base_filename}\
-      bash -s < add-ca-cert.bash $base_filename
+  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} \
+    MAAS_INSTANCE=${MAAS_INSTANCE} \
+    MAAS_TEST_DB_CHANNEL=${MAAS_TEST_DB_CHANNEL} \
+    MAAS_CONTROL_IP_RANGE=${MAAS_CONTROL_IP_RANGE} \
+    MAAS_MANAGEMENT_IP_RANGE=${MAAS_MANAGEMENT_IP_RANGE} \
+    MAAS_IPV6_IP_RANGE=${MAAS_IPV6_IP_RANGE} \
+    MAAS_DUAL_STACK_IPV4_RANGE=${MAAS_DUAL_STACK_IPV4_RANGE} \
+    MAAS_DUAL_STACK_IPV6_RANGE=${MAAS_DUAL_STACK_IPV6_RANGE} \
+    base_filename=${base_filename} \
+    bash -s $base_filename <add-ca-cert.bash
 }
 
 run() {

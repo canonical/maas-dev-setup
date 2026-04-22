@@ -57,7 +57,7 @@ dpkg --list | grep nginx-core && sudo systemctl stop nginx && systemctl disable 
 echo
 echo "#################################"
 echo "Installing the MAAS test database"
-sudo snap install maas-test-db --channel=latest/edge
+sudo snap install maas-test-db --channel=${MAAS_TEST_DB_CHANNEL}
 
 echo
 echo "#######################"
