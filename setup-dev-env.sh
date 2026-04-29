@@ -37,7 +37,7 @@ show_help() {
   echo "    setup profiles, networks and containers for MAAS in LXD"
   echo ""
   echo "  The script does:"
-  echo "    * DISABLE YOUR UFW FIREWALL (to make sure lxd connections work)"
+  echo "    * Add rules your UFW firewall (to make sure lxd connections work)"
   echo "    * install git, make, lxd, snapcraft"
   echo "    * clone the source code and"
   echo "      (if configured) add a branch for your launchpad account"
@@ -53,7 +53,7 @@ show_help() {
   echo "Flags:"
   echo "  -h --help         show this help"
   echo "  ${run_it_arg}              start the setup"
-  echo "  -su --skip-ufw    skip disabling UFW"
+  echo "  -su --skip-ufw    skip configuring UFW"
   echo "  -sd --skip-dep    skip installing dependencies to your local system"
   echo "  -si --skip-lxi    skip initializing LXD (lxd auto init)"
   echo "  -sn --skip-lxn    skip setting up LXD profiles and networks"
@@ -67,11 +67,16 @@ show_help() {
   echo ""
 }
 
-disable_ufw() {
+configure_ufw() {
   if command -v ufw > /dev/null; then
-    echo "Disabling UFW firewall..."
+    echo "Configuring UFW..."
     echo "#########################"
-    sudo ufw disable
+    sudo ufw allow in on lxdbr0
+    sudo ufw route allow in on lxdbr0
+    sudo ufw route allow out on lxdbr0
+    sudo ufw allow in on maas-ctrl
+    sudo ufw route allow in on maas-ctrl
+    sudo ufw route allow out on maas-ctrl
     echo "..done"
   else
     echo "#################################"
@@ -292,7 +297,7 @@ add_ca_crt(){
 
 run() {
   if [ ${skip_ufw} -ne 1 ]; then
-    disable_ufw
+    configure_ufw
   else
     echo "Skipping UFW setup"
     echo ""
