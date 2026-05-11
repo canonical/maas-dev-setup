@@ -57,6 +57,8 @@ dpkg --list | grep nginx-core && sudo systemctl stop nginx && systemctl disable 
 echo
 echo "#################################"
 echo "Installing the MAAS test database"
+sudo snap install core26 --beta
+sudo snap install snapd --beta
 sudo snap install maas-test-db --channel=${MAAS_TEST_DB_CHANNEL}
 
 echo
