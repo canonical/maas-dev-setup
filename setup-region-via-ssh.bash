@@ -57,8 +57,8 @@ dpkg --list | grep nginx-core && sudo systemctl stop nginx && systemctl disable 
 echo
 echo "#################################"
 echo "Installing the MAAS test database"
-sudo snap install core26 --beta
-sudo snap install snapd --beta
+sudo snap install core26
+sudo snap install snapd
 sudo snap install maas-test-db --channel=${MAAS_TEST_DB_CHANNEL}
 
 echo
@@ -99,10 +99,10 @@ echo "Login using admin profile"
 declare -i maas_up=1
 while [ $maas_up -ne 0 ]; do
   # Check if the MAAS API is up before attempting to login
-  if curl -sf "http://${container_ip}:5240/MAAS/api/2.0/version/" > /dev/null 2>&1; then
-    maas login admin "http://${container_ip}:5240/MAAS/api/2.0/" $(sudo maas apikey --username=maas);
+  if curl -sf "http://${container_ip}:5240/MAAS/api/2.0/version/" >/dev/null 2>&1; then
+    maas login admin "http://${container_ip}:5240/MAAS/api/2.0/" $(sudo maas apikey --username=maas)
     maas_up=$?
-  else 
+  else
     echo "Retrying in 5 seconds..."
     sleep 5
   fi
