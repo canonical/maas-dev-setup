@@ -25,8 +25,31 @@ that the following names/network ranges are not yet used by LXD (or change value
 `config.sh`).
 
 * a profile in LXDs default project called `$MAAS_CONTAINER_NAME`
-* two networks named `maas-ctrl` and `maas-kvm`
-  * these networks will use the IP ranges `$MAAS_CONTROL_IP_RANGE` and `MAAS_MANAGEMENT_IP_RANGE`
+* four networks named after `$MAAS_CTRL_NETWORK`, `$MAAS_KVM_NETWORK`, `$MAAS_IPV6_NETWORK`, and `$MAAS_DUAL_STACK_NETWORK`
+  * these networks will use the IP ranges `$MAAS_CONTROL_IP_RANGE`, `$MAAS_MANAGEMENT_IP_RANGE`, and the IPv6/dual-stack ranges
+
+
+## Running multiple MAAS versions simultaneously
+
+Each MAAS version gets its own isolated set of LXD resources. Set `MAAS_INSTANCE` in
+`config.sh` to the numeric MAAS version string (max 5 digits, e.g. `"38"` for MAAS 3.8).
+All container, profile, network names, IP ranges, **and source directory** are derived from it automatically.
+
+Each instance clones MAAS into a separate directory (`../maas-<INSTANCE>`), so their
+snap trees never conflict. IP ranges are also derived automatically — no manual range
+assignment needed.
+
+Use the skip flags (`-su -sd -si`) to skip one-time steps when setting up additional instances:
+
+```sh
+# First instance (e.g. MAAS 3.6) — clone goes to ../maas-36
+# In config.sh: MAAS_INSTANCE="36"
+./setup-dev-env.sh --ok
+
+# Second instance (e.g. MAAS 3.8) — clone goes to ../maas-38
+# In config.sh: MAAS_INSTANCE="38"
+./setup-dev-env.sh --ok -su -sd -si
+```
 
 
 ## How to run this script?
@@ -48,7 +71,7 @@ do the following:
 * remove everything from LXD (e.g. containers, profiles, networks, ...) for all projects
   * you can use [LXD Delete All](https://github.com/tmerten/lxd-delete-all) for this job
 * remove your [libvirt](https://libvirt.org/) network definitions (`virsh net-destroy` and `virsh net-undefine` for all networks)
-* delete (or move) your current maas source code
+* delete (or move) your MAAS source code (e.g. `../maas-<INSTANCE>`)
 
 ## What happens if I run this script?
 
