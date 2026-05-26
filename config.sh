@@ -5,8 +5,8 @@
 # Depending on the MAAS version, that you are running,
 # you should pick the appropriate ubuntu version.
 #
-# These are currently noble for 3.6+, jammy for 3.4, 3.5
-UBUNTU_VERSION="noble"
+# These are currently resolute for 3.8+, noble for 3.6, 3.7, jammy for 3.4, 3.5
+UBUNTU_VERSION="resolute"
 
 # This assumes that your maas source should be installed next to this project, e.g.
 # $HOME/src/setup-maas-dev-env/ --> $HOME/src/maas/
@@ -16,9 +16,9 @@ MAAS_SRC="../maas"
 # as well as the name for the related LXD profile
 MAAS_CONTAINER_NAME="maas-dev"
 
-# If you enter a launchpad-id, the script can automatically setup your local fork
-# and retrieve your public ssh key from launchpad
-MAAS_LAUNCHPAD_ID=""
+# If you enter your GitHub ID, the script can automatically set up your local fork
+# and import your public ssh key from GitHub
+MAAS_GITHUB_ID=""
 
 # The LXD project in which this installation should reside
 # Leave empty or set to "default" to use the default project

@@ -108,11 +108,11 @@ setup_code() {
   echo "################################"
   echo "Cloning code into ${maas_src}..."
   mkdir -p ${maas_src} && cd ${maas_src}
-  git clone --origin upstream https://git.launchpad.net/maas . --recurse-submodules
+  git clone --origin upstream https://github.com/canonical/maas.git . --recurse-submodules
   echo "..done"
-  if [ ${MAAS_LAUNCHPAD_ID} != "" ]; then
-    echo "Adding your origin remote git+ssh://${MAAS_LAUNCHPAD_ID}@git.launchpad.net/~${MAAS_LAUNCHPAD_ID}/maas"
-    git remote add origin git+ssh://${MAAS_LAUNCHPAD_ID}@git.launchpad.net/~${MAAS_LAUNCHPAD_ID}/maas
+  if [ ${MAAS_GITHUB_ID} != "" ]; then
+    echo "Adding your origin remote git@github.com:${MAAS_GITHUB_ID}/maas.git"
+    git remote add origin git@github.com:${MAAS_GITHUB_ID}/maas.git
   fi
   echo "..done"
   echo
