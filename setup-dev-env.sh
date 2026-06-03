@@ -67,6 +67,26 @@ show_help() {
   echo ""
 }
 
+run_pre_checks() {
+  echo "Running Pre-checks..."
+  echo "#########################"
+  check_auth_keys
+  # ToDo: Add any more checks that should be run before doing the actual work
+  echo "..Pre-checks done"
+}
+
+check_auth_keys() {
+  echo "Checking for keys.."
+  if [ ! -f "$HOME/.ssh/id_rsa.pub" ]; then
+    echo "#########################"
+    echo "File $HOME/.ssh/id_rsa.pub is missing, and is needed to continue"
+    echo "If your keys are saved with a different name, copy them over to 'id_rsa' naming convention"
+    echo "or, create them using ssh-keygen command, add it to your github account and then re-run this script"
+    exit 1
+  fi
+  echo "..Key check done"
+}
+
 configure_ufw() {
   if command -v ufw > /dev/null; then
     echo "Configuring UFW..."
@@ -296,6 +316,7 @@ add_ca_crt(){
 }
 
 run() {
+  run_pre_checks
   if [ ${skip_ufw} -ne 1 ]; then
     configure_ufw
   else
