@@ -110,7 +110,7 @@ setup_code() {
   mkdir -p ${maas_src} && cd ${maas_src}
   git clone --origin upstream https://github.com/canonical/maas.git . --recurse-submodules
   echo "..done"
-  if [ ${MAAS_GITHUB_ID} != "" ]; then
+  if [[ ${MAAS_GITHUB_ID} != "" ]]; then
     echo "Adding your origin remote git@github.com:${MAAS_GITHUB_ID}/maas.git"
     git remote add origin git@github.com:${MAAS_GITHUB_ID}/maas.git
   fi
