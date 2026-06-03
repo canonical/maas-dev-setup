@@ -68,11 +68,11 @@ show_help() {
 }
 
 run_pre_checks() {
-  echo "Running Pre-checks..."
+  echo "Running Pre-Checks..."
   echo "#########################"
   check_auth_keys
   # ToDo: Add any more checks that should be run before doing the actual work
-  echo "..Pre-checks done"
+  echo "..Pre-Checks done"
 }
 
 check_auth_keys() {
