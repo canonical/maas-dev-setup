@@ -79,9 +79,9 @@ check_auth_keys() {
   echo "Checking for keys.."
   if [ ! -f "$HOME/.ssh/id_rsa.pub" ]; then
     echo "#########################"
-    echo "File $HOME/.ssh/id_rsa.pub is missing, and is needed to continue"
-    echo "If your keys are saved with a different name, copy them over to 'id_rsa' naming convention"
-    echo "or, create them using ssh-keygen command, add it to your github account and then re-run this script"
+    echo "File ${HOME}/.ssh/id_rsa.pub is missing and is needed to continue"
+    echo "If your keys are saved with a different name, copy them to the 'id_rsa' naming convention"
+    echo "or create them using the ssh-keygen command, add it to your GitHub account and then re-run this script"
     exit 1
   fi
   echo "..Key check done"
