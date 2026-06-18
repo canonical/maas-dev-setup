@@ -10,6 +10,11 @@ set -e
 # source config and setup variables
 . ./config.sh
 
+# SSH key used for password-less access to the MAAS dev VM
+MAAS_DEV_SSH_KEY_BASENAME="id_maas_dev_ssh"
+MAAS_DEV_SSH_KEY_FILE="$HOME/.ssh/${MAAS_DEV_SSH_KEY_BASENAME}"
+MAAS_DEV_SSH_PUBLIC_KEY_FILE="${MAAS_DEV_SSH_KEY_FILE}.pub"
+
 # get absolute path for lxd
 maas_src=$(readlink -f ${MAAS_SRC})
 # see https://stackoverflow.com/questions/29832037/how-to-get-script-directory-in-posix-sh
@@ -71,18 +76,18 @@ run_pre_checks() {
   echo "Running Pre-Checks..."
   echo "#########################"
   check_auth_keys
-  # ToDo: Add any more checks that should be run before doing the actual work
   echo "..Pre-Checks done"
 }
 
 check_auth_keys() {
   echo "Checking for keys.."
-  if [ ! -f "$HOME/.ssh/id_rsa.pub" ]; then
+  if [ ! -f "$MAAS_DEV_SSH_KEY_FILE" ]; then
     echo "#########################"
-    echo "File ${HOME}/.ssh/id_rsa.pub is missing and is needed to continue"
-    echo "If your keys are saved with a different name, copy them to the 'id_rsa' naming convention"
-    echo "or create them using the ssh-keygen command, add it to your GitHub account and then re-run this script"
-    exit 1
+    echo "File ${MAAS_DEV_SSH_KEY_FILE} is missing; generating a new SSH key pair now"
+    echo "This key is needed for password-less SSH to the maas-dev VM."
+    mkdir -p "$HOME/.ssh"
+    ssh-keygen -t rsa -b 4096 -N "" -f "$MAAS_DEV_SSH_KEY_FILE"
+    echo "..SSH key pair generated"
   fi
   echo "..Key check done"
 }
@@ -249,7 +254,7 @@ config:
         runcmd:
         - cat /dev/zero | ssh-keygen -q -N ""
         ssh_authorized_keys:
-        - $(cat ${HOME}/.ssh/id_rsa.pub | cut -d' ' -f1-2)
+        - $(cut -d' ' -f1-2 "${MAAS_DEV_SSH_PUBLIC_KEY_FILE}")
 description: Build environment for MAAS
 devices:
     work:
