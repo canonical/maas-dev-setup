@@ -216,10 +216,9 @@ __EOF
 }
 
 setup_profile() {
-  cd ${script_dir}
-
   echo "#######################"
   echo "Setting up LXD profiles"
+  cd ${script_dir}
   lxc profile create ${MAAS_CONTAINER_NAME}
   cat <<EOF | lxc profile edit ${MAAS_CONTAINER_NAME}
 config:
