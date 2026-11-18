@@ -30,6 +30,7 @@ skip_dep=0
 skip_lxi=0
 skip_lxd=0
 skip_lxn=0
+skip_pro=0
 skip_co=0
 skip_snap=0
 crt_file=""
@@ -61,7 +62,8 @@ show_help() {
   echo "  -su --skip-ufw    skip configuring UFW"
   echo "  -sd --skip-dep    skip installing dependencies to your local system"
   echo "  -si --skip-lxi    skip initializing LXD (lxd auto init)"
-  echo "  -sn --skip-lxn    skip setting up LXD profiles and networks"
+  echo "  -sn --skip-lxn    skip setting up LXD networks"
+  echo "  -sp --skip-profile skip setting up the LXD profile"
   echo "  -sl --skip-lxd    skip starting the LXD container"
   echo "  -sc --skip-checkout skip checking out the code"
   echo "  -ss --skip-snap   skip building the snap tree"
@@ -132,7 +134,7 @@ make_snap_tree() {
   echo
 }
 
-setup_lxd() {
+setup_networks() {
   echo "#######################"
   echo "Setting up LXD networks"
   cd ${script_dir}
@@ -216,9 +218,12 @@ __EOF
   lxc config set core.https_address [::]:8443
   echo "..done"
   echo
+}
 
+setup_profile() {
   echo "#######################"
   echo "Setting up LXD profiles"
+  cd ${script_dir}
   lxc profile create ${MAAS_CONTAINER_NAME}
   cat <<EOF | lxc profile edit ${MAAS_CONTAINER_NAME}
 config:
@@ -320,9 +325,15 @@ run() {
     echo ""
   fi
   if [ ${skip_lxn} -ne 1 ]; then
-    setup_lxd
+    setup_networks
   else
-    echo "Skipping LXD setup"
+    echo "Skipping LXD network setup"
+    echo ""
+  fi
+  if [ ${skip_pro} -ne 1 ]; then
+    setup_profile
+  else
+    echo "Skipping LXD profile setup"
     echo ""
   fi
   if [ ${skip_co} -ne 1 ]; then
@@ -370,6 +381,9 @@ while :; do
           ;;
       -sn|--skip-lxn)
           skip_lxn=1
+          ;;
+      -sp|--skip-profile)
+          skip_pro=1
           ;;
       -sl|--skip-lxd)
           skip_lxd=1
