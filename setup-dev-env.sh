@@ -11,7 +11,7 @@ set -e
 . ./config.sh
 
 if [ -z "${MAAS_GITHUB_ID}" ]; then
-  echo "MAAS_GITHUB_ID is not set in config.sh - it is required to import your ssh key via ssh_import_id into the dev container" >&2
+  echo "MAAS_GITHUB_ID is not set in config.sh - it is required to import your SSH keys from your GitHub account via ssh_import_id into the dev container" >&2
   exit 1
 fi
 

@@ -17,9 +17,10 @@ MAAS_SRC="../maas"
 MAAS_CONTAINER_NAME="maas-dev"
 
 # Enter your GitHub ID so the script can automatically set up your local fork
-# and import your public ssh key from GitHub. The SSH key on your GitHub account should 
-# be the same as the one on your local machine (see the docs on adding an ssh key to
-# your GitHub account if you haven't already https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account). 
+# and import all public SSH authentication keys registered to your GitHub account.
+# One of these keys should match an SSH key on your local machine (see
+# the docs on adding an SSH key to your GitHub account if you haven't already:
+# https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
 MAAS_GITHUB_ID=""
 
 # The LXD project in which this installation should reside
