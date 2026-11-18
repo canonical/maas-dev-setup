@@ -10,6 +10,11 @@ set -e
 # source config and setup variables
 . ./config.sh
 
+if [ -z "${MAAS_GITHUB_ID}" ]; then
+  echo "MAAS_GITHUB_ID is not set in config.sh - it is required to import your SSH keys from your GitHub account via ssh_import_id into the dev container" >&2
+  exit 1
+fi
+
 # get absolute path for lxd
 maas_src=$(readlink -f ${MAAS_SRC})
 # see https://stackoverflow.com/questions/29832037/how-to-get-script-directory-in-posix-sh
@@ -110,7 +115,7 @@ setup_code() {
   mkdir -p ${maas_src} && cd ${maas_src}
   git clone --origin upstream https://github.com/canonical/maas.git . --recurse-submodules
   echo "..done"
-  if [ ${MAAS_GITHUB_ID} != "" ]; then
+  if [ -n "${MAAS_GITHUB_ID:-}" ]; then
     echo "Adding your origin remote git@github.com:${MAAS_GITHUB_ID}/maas.git"
     git remote add origin git@github.com:${MAAS_GITHUB_ID}/maas.git
   fi
@@ -228,8 +233,8 @@ config:
         - jq
         runcmd:
         - cat /dev/zero | ssh-keygen -q -N ""
-        ssh_authorized_keys:
-        - $(cat ${HOME}/.ssh/id_rsa.pub | cut -d' ' -f1-2)
+        ssh_import_id:
+        - gh:${MAAS_GITHUB_ID}
 description: Build environment for MAAS
 devices:
     work:
