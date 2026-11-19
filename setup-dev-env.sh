@@ -299,9 +299,22 @@ container_ssh() {
   ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} "$@"
 }
 
+setup_machine_project() {
+  if lxc project show ${MAAS_MACHINE_PROJECT} > /dev/null 2>&1; then
+    echo "LXD project ${MAAS_MACHINE_PROJECT} already exists, reusing it"
+    return
+  fi
+
+  echo "#########################################"
+  echo "Setting up LXD project ${MAAS_MACHINE_PROJECT}"
+  lxc project create ${MAAS_MACHINE_PROJECT}
+  echo "..done"
+  echo
+}
+
 setup_machine_profile() {
-  if lxc profile show ${MAAS_MACHINE_PROFILE} > /dev/null 2>&1; then
-    echo "LXD profile ${MAAS_MACHINE_PROFILE} already exists, reusing it"
+  if lxc profile show ${MAAS_MACHINE_PROJECT} --project ${MAAS_MACHINE_PROJECT} > /dev/null 2>&1; then
+    echo "LXD profile ${MAAS_MACHINE_PROJECT} already exists, reusing it"
     return
   fi
 
@@ -313,10 +326,10 @@ setup_machine_profile() {
   fi
 
   echo "#########################################"
-  echo "Setting up LXD profile ${MAAS_MACHINE_PROFILE}"
+  echo "Setting up LXD profile ${MAAS_MACHINE_PROJECT}"
   echo "Note that if you change LXD versions locally, this profile may need to recreated or updated."
-  lxc profile create ${MAAS_MACHINE_PROFILE}
-  cat <<EOF | lxc profile edit ${MAAS_MACHINE_PROFILE}
+  lxc profile create ${MAAS_MACHINE_PROJECT} --project ${MAAS_MACHINE_PROJECT}
+  cat <<EOF | lxc profile edit ${MAAS_MACHINE_PROJECT} --project ${MAAS_MACHINE_PROJECT}
 config:
   ${secureboot_config}
   limits.cpu: "2"
@@ -361,41 +374,47 @@ setup_power_cert() {
   if lxc config trust show ${fingerprint} > /dev/null 2>&1; then
     echo "Certificate is already trusted by LXD"
   else
-    lxc config trust add "${power_cert_dir}/lxd.crt" --name ${power_cert_name} --restricted --projects default
+    lxc config trust add "${power_cert_dir}/lxd.crt" --name ${power_cert_name} --restricted --projects ${MAAS_MACHINE_PROJECT}
   fi
 
-  # Push the LXD client cert and key to the dev container, so we can use them as part of the power parameters when adding the machine to MAAS
-  lxc file push --uid 1000 --gid 1000 --mode 0600 \
-    "${power_cert_dir}/lxd.crt" "${power_cert_dir}/lxd.key" ${MAAS_CONTAINER_NAME}/home/ubuntu/
   echo "..done"
   echo
 }
 
 create_machines() {
-  cd ${script_dir}
+  # MAAS needs the power cert and key as power parameters. They are only
+  # needed in the container while machines are added, so remove them
+  # afterwards, including when a step fails.
+  trap 'container_ssh rm -f lxd.crt lxd.key || true' EXIT
+  lxc file push --uid 1000 --gid 1000 --mode 0600 \
+    "${power_cert_dir}/lxd.crt" "${power_cert_dir}/lxd.key" ${MAAS_CONTAINER_NAME}/home/ubuntu/
+
   i=1
   while [ ${i} -le ${MAAS_MACHINE_COUNT} ]; do
     machine="${MAAS_CONTAINER_NAME}-machine-${i}"
     echo "#############################"
     echo "Setting up LXD VM ${machine}"
-    if lxc info ${machine} > /dev/null 2>&1; then
+    if lxc info ${machine} --project ${MAAS_MACHINE_PROJECT} > /dev/null 2>&1; then
       echo "VM ${machine} already exists, reusing it"
     else
-      lxc init --vm --empty --profile ${MAAS_MACHINE_PROFILE} ${machine}
+      lxc init --vm --empty --project ${MAAS_MACHINE_PROJECT} --profile ${MAAS_MACHINE_PROJECT} ${machine}
     fi
-    mac=$(lxc config get ${machine} volatile.eth0.hwaddr)
+    mac=$(lxc config get ${machine} volatile.eth0.hwaddr --project ${MAAS_MACHINE_PROJECT})
 
     container_ssh \
         MACHINE_NAME=${machine}\
         MACHINE_MAC=${mac}\
         LXD_ADDRESS=${MAAS_CONTROL_IP_RANGE}\
-        LXD_PROJECT=default\
+        LXD_PROJECT=${MAAS_MACHINE_PROJECT}\
         LXD_CERT=/home/ubuntu/lxd.crt\
         LXD_KEY=/home/ubuntu/lxd.key\
-        bash -s < add-machine-via-ssh.bash
+        bash -s < "${script_dir}/add-machine-via-ssh.bash"
     echo
     i=$((i + 1))
   done
+
+  container_ssh rm -f lxd.crt lxd.key
+  trap - EXIT
 }
 
 setup_machines() {
@@ -404,6 +423,7 @@ setup_machines() {
     echo
     return
   fi
+  setup_machine_project
   setup_machine_profile
   setup_power_cert
   create_machines
@@ -500,7 +520,7 @@ print_done() {
   echo "We are done!"
   echo
   echo "  MAAS:     http://${container_ip}:5240/MAAS (maas / maas)"
-  echo "  Machines: lxc list ${MAAS_CONTAINER_NAME}-machine-"
+  echo "  Machines: lxc list --project ${MAAS_MACHINE_PROJECT} ${MAAS_CONTAINER_NAME}-machine-"
   echo
   echo "Have fun developing MAAS"
   echo

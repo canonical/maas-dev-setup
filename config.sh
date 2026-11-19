@@ -45,6 +45,6 @@ MAAS_DUAL_STACK_IPV6_RANGE="fd42:be3f:b08b:3d6d::1"
 # Set to 0 (or pass --skip-machines) to skip this.
 MAAS_MACHINE_COUNT=1
 
-# The LXD profile for those VMs, which are booted as machines in MAAS. 
-# It lives in LXD's default project.
-MAAS_MACHINE_PROFILE="maas-machine"
+# The LXD project for those VMs, also used as the name of their profile
+# inside that project. Both are created if they don't exist.
+MAAS_MACHINE_PROJECT="maas-machines"
