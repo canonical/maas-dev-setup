@@ -117,25 +117,5 @@ export ip_range=$(maas admin ipranges create type=dynamic start_ip=${kvm_network
 maas admin vlan update $target_fabric_id untagged dhcp_on=True primary_rack=$target_rack_controller
 
 echo
-echo "#############################"
-echo "Adding your hosts lxd to MAAS"
-maas admin vm-hosts create type=lxd power_address=${control_network_prefix}.1 project=maas name=maas-host
-
-echo
-echo "#################################################################"
-echo "We are done! You should have a running MAAS installation!"
-echo
-echo "  please go to http://${container_ip}:5240 and finish the setup"
-echo "   username: maas"
-echo "   password: maas"
-echo
-echo "To complete the setup point your browser to"
-echo "  http://${container_ip}:5240/MAAS/r/kvm/lxd"
-echo "and do to maas-host -> KVM host settings -> Download certificate."
-echo "Install the certificate to your local lxd with:"
-echo "  lxc config trust add <path/to/maas-host@...>"
-echo "Go back to your browser and click 'Refresh host'"
-echo
-echo "Have fun developing MAAS"
-echo
+echo "MAAS region is set up and logged in as the admin profile"
 echo

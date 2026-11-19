@@ -33,7 +33,13 @@ skip_lxn=0
 skip_pro=0
 skip_co=0
 skip_snap=0
+skip_region=0
+skip_machines=0
 crt_file=""
+
+# Client certificate MAAS uses to drive the host's LXD (lxd power driver).
+power_cert_dir="${script_dir}/.lxd-power"
+power_cert_name="maas-dev-setup-power"
 
 show_help() {
   echo "Description:"
@@ -67,10 +73,14 @@ show_help() {
   echo "  -sl --skip-lxd    skip starting the LXD container"
   echo "  -sc --skip-checkout skip checking out the code"
   echo "  -ss --skip-snap   skip building the snap tree"
+  echo "  -sr --skip-region skip installing and configuring MAAS in the container"
+  echo "  -sm --skip-machines skip creating LXD VMs and adding them to MAAS as machines"
   echo "  -c  --ca-crt      add the given .crt (PEM format) file to the trusted CAs in the lxd container" 
   echo ""
   echo "Note:"
   echo "  If you installed maas before you likely want to run: ./$0 -su -sd -sv --ok"
+  echo "  To only add more machines to an existing setup, bump MAAS_MACHINE_COUNT and run:"
+  echo "    $0 -su -sd -si -sn -sp -sc -ss -sl -sr --ok"
   echo ""
 }
 
@@ -284,6 +294,141 @@ configure_container() {
       bash -s < setup-region-via-ssh.bash
 }
 
+container_ssh() {
+  container_ip=$(lxc list -c4 --format csv ${MAAS_CONTAINER_NAME} | grep "${control_network_prefix}"| cut -d' ' -f1)
+  ssh -o "StrictHostKeyChecking no" ubuntu@${container_ip} "$@"
+}
+
+setup_machine_project() {
+  if lxc project show ${MAAS_MACHINE_PROJECT} > /dev/null 2>&1; then
+    echo "LXD project ${MAAS_MACHINE_PROJECT} already exists, reusing it"
+    return
+  fi
+
+  echo "#########################################"
+  echo "Setting up LXD project ${MAAS_MACHINE_PROJECT}"
+  lxc project create ${MAAS_MACHINE_PROJECT}
+  echo "..done"
+  echo
+}
+
+setup_machine_profile() {
+  if lxc profile show ${MAAS_MACHINE_PROJECT} --project ${MAAS_MACHINE_PROJECT} > /dev/null 2>&1; then
+    echo "LXD profile ${MAAS_MACHINE_PROJECT} already exists, reusing it"
+    return
+  fi
+
+  # Disable secure boot, the syntax differs depending on the LXD version
+  if lxc info | grep -q '^- instance_boot_mode$'; then
+    secureboot_config='boot.mode: uefi-nosecureboot'  # LXD >= 6.7
+  else
+    secureboot_config='security.secureboot: "false"'  # LXD <= 6.6 (incl. 5.21 LTS)
+  fi
+
+  echo "#########################################"
+  echo "Setting up LXD profile ${MAAS_MACHINE_PROJECT}"
+  echo "Note that if you change LXD versions locally, this profile may need to recreated or updated."
+  lxc profile create ${MAAS_MACHINE_PROJECT} --project ${MAAS_MACHINE_PROJECT}
+  cat <<EOF | lxc profile edit ${MAAS_MACHINE_PROJECT} --project ${MAAS_MACHINE_PROJECT}
+config:
+  ${secureboot_config}
+  limits.cpu: "2"
+  limits.memory: 6GiB
+description: Empty VMs on maas-kvm, PXE booted and managed by MAAS
+devices:
+  eth0:
+    boot.priority: "1"
+    name: eth0
+    nictype: bridged
+    parent: maas-kvm
+    type: nic
+  root:
+    boot.priority: "0"
+    path: /
+    pool: default
+    size: 8GB
+    type: disk
+EOF
+  echo "..done"
+  echo
+}
+
+setup_power_cert() {
+  echo "#####################################################"
+  echo "Setting up the LXD client certificate for MAAS power"
+  if [ "$(lxc config get core.https_address)" = "" ]; then
+    lxc config set core.https_address [::]:8443
+  fi
+
+  # Generate the LXD client certificate for MAAS power if it doesn't already exist
+  if [ ! -f "${power_cert_dir}/lxd.crt" ]; then
+    mkdir -p "${power_cert_dir}"
+    chmod 700 "${power_cert_dir}"
+    openssl req -x509 -newkey rsa:4096 -sha256 -nodes -days 3650 \
+      -subj "/CN=${power_cert_name}" \
+      -keyout "${power_cert_dir}/lxd.key" -out "${power_cert_dir}/lxd.crt"
+  fi
+
+  # Get the fingerprint of the generated certificate and add it to LXD trust if not already trusted
+  fingerprint=$(openssl x509 -in "${power_cert_dir}/lxd.crt" -noout -fingerprint -sha256 | cut -d= -f2 | tr -d : | tr 'A-F' 'a-f')
+  if lxc config trust show ${fingerprint} > /dev/null 2>&1; then
+    echo "Certificate is already trusted by LXD"
+  else
+    lxc config trust add "${power_cert_dir}/lxd.crt" --name ${power_cert_name} --restricted --projects ${MAAS_MACHINE_PROJECT}
+  fi
+
+  echo "..done"
+  echo
+}
+
+create_machines() {
+  # MAAS needs the power cert and key as power parameters. They are only
+  # needed in the container while machines are added, so remove them
+  # afterwards, including when a step fails.
+  trap 'container_ssh rm -f lxd.crt lxd.key || true' EXIT
+  lxc file push --uid 1000 --gid 1000 --mode 0600 \
+    "${power_cert_dir}/lxd.crt" "${power_cert_dir}/lxd.key" ${MAAS_CONTAINER_NAME}/home/ubuntu/
+
+  i=1
+  while [ ${i} -le ${MAAS_MACHINE_COUNT} ]; do
+    machine="${MAAS_CONTAINER_NAME}-machine-${i}"
+    echo "#############################"
+    echo "Setting up LXD VM ${machine}"
+    if lxc info ${machine} --project ${MAAS_MACHINE_PROJECT} > /dev/null 2>&1; then
+      echo "VM ${machine} already exists, reusing it"
+    else
+      lxc init --vm --empty --project ${MAAS_MACHINE_PROJECT} --profile ${MAAS_MACHINE_PROJECT} ${machine}
+    fi
+    mac=$(lxc config get ${machine} volatile.eth0.hwaddr --project ${MAAS_MACHINE_PROJECT})
+
+    container_ssh \
+        MACHINE_NAME=${machine}\
+        MACHINE_MAC=${mac}\
+        LXD_ADDRESS=${MAAS_CONTROL_IP_RANGE}\
+        LXD_PROJECT=${MAAS_MACHINE_PROJECT}\
+        LXD_CERT=/home/ubuntu/lxd.crt\
+        LXD_KEY=/home/ubuntu/lxd.key\
+        bash -s < "${script_dir}/add-machine-via-ssh.bash"
+    echo
+    i=$((i + 1))
+  done
+
+  container_ssh rm -f lxd.crt lxd.key
+  trap - EXIT
+}
+
+setup_machines() {
+  if [ ${MAAS_MACHINE_COUNT} -lt 1 ]; then
+    echo "MAAS_MACHINE_COUNT is ${MAAS_MACHINE_COUNT}, not creating any machines"
+    echo
+    return
+  fi
+  setup_machine_project
+  setup_machine_profile
+  setup_power_cert
+  create_machines
+}
+
 add_ca_crt(){
   cd ${script_dir}
   container_ip=$(lxc list -c4 --format csv ${MAAS_CONTAINER_NAME} | grep "${control_network_prefix}"| cut -d' ' -f1)
@@ -354,7 +499,31 @@ run() {
   if [ ! -z "${crt_file}" ]; then
     add_ca_crt
   fi
-  configure_container
+  if [ ${skip_region} -ne 1 ]; then
+    configure_container
+  else
+    echo "Skipping MAAS region setup"
+    echo ""
+  fi
+  if [ ${skip_machines} -ne 1 ]; then
+    setup_machines
+  else
+    echo "Skipping machine setup"
+    echo ""
+  fi
+  print_done
+}
+
+print_done() {
+  container_ip=$(lxc list -c4 --format csv ${MAAS_CONTAINER_NAME} | grep "${control_network_prefix}"| cut -d' ' -f1)
+  echo "#################################################################"
+  echo "We are done!"
+  echo
+  echo "  MAAS:     http://${container_ip}:5240/MAAS (maas / maas)"
+  echo "  Machines: lxc list --project ${MAAS_MACHINE_PROJECT} ${MAAS_CONTAINER_NAME}-machine-"
+  echo
+  echo "Have fun developing MAAS"
+  echo
 }
 
 while :; do
@@ -393,6 +562,12 @@ while :; do
           ;;
       -ss|--skip-snap)
           skip_snap=1
+          ;;
+      -sr|--skip-region)
+          skip_region=1
+          ;;
+      -sm|--skip-machines)
+          skip_machines=1
           ;;
       -c|--ca-crt)
           crt_file=$2

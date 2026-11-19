@@ -39,3 +39,12 @@ MAAS_IPV6_IP_RANGE="fd42:be3f:b08a:3d6c::1"
 MAAS_DUAL_STACK_NETWORK="maas-dual-stack"
 MAAS_DUAL_STACK_IPV4_RANGE="10.30.0.1"
 MAAS_DUAL_STACK_IPV6_RANGE="fd42:be3f:b08b:3d6d::1"
+
+# Number of empty LXD VMs to create on your host and add to MAAS as
+# machines (power_type=lxd). They are named ${MAAS_CONTAINER_NAME}-machine-<n>.
+# Set to 0 (or pass --skip-machines) to skip this.
+MAAS_MACHINE_COUNT=1
+
+# The LXD project for those VMs, also used as the name of their profile
+# inside that project. Both are created if they don't exist.
+MAAS_MACHINE_PROJECT="maas-machines"
