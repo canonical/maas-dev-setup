@@ -8,6 +8,11 @@
 # These are currently resolute for 3.8+, noble for 3.6, 3.7, jammy for 3.4, 3.5
 UBUNTU_VERSION="resolute"
 
+# Rather than setting up the dev environment,
+# you can also specify a release version to install.
+# For example 3.5/stable
+MAAS_RELEASE_VERSION=""
+
 # This assumes that your maas source should be installed next to this project, e.g.
 # $HOME/src/setup-maas-dev-env/ --> $HOME/src/maas/
 MAAS_SRC="../maas"

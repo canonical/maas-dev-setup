@@ -14,8 +14,9 @@ kvm_network_prefix=${MAAS_MANAGEMENT_IP_RANGE%.*}
 ipv6_network_prefix=${MAAS_IPV6_IP_RANGE%:*}
 dual_stack_ipv4_prefix=${MAAS_DUAL_STACK_IPV4_RANGE%.*}
 dual_stack_ipv6_prefix=${MAAS_DUAL_STACK_IPV6_RANGE%:*}
+maas_release_version=${MAAS_RELEASE_VERSION}
 
-echo "${container_ip} ${gateway_ip} ${control_network_prefix} ${kvm_network_prefix} ${ipv6_network_prefix} ${dual_stack_ipv4_prefix} ${dual_stack_ipv6_prefix}"
+echo "${container_ip} ${gateway_ip} ${control_network_prefix} ${kvm_network_prefix} ${ipv6_network_prefix} ${dual_stack_ipv4_prefix} ${dual_stack_ipv6_prefix} ${maas_release_version}"
 
 echo
 echo "######################################"
@@ -54,27 +55,39 @@ sudo systemctl disable named postgresql isc-dhcp-server
 # https://github.com/canonical/maas/commit/ab68c2d7d0847692510a7d29b06e0deeb26dc37a
 dpkg --list | grep nginx-core && sudo systemctl stop nginx && systemctl disable nginx
 
-echo
-echo "#################################"
-echo "Installing the MAAS test database"
-sudo snap install maas-test-db --channel=latest/edge
+  if [ ${maas_release_version} != "" ]; then
+    echo
+    echo "#################################"
+    echo "Installing MAAS ${maas_release_version}"
+    sudo snap install maas --channel=${maas_release_version}
 
-echo
-echo "#######################"
-echo "Unpacking the snap tree"
-sudo snap try dev-snap/tree
+    echo
+    echo "#################################"
+    echo "Installing the MAAS test database"
+    sudo snap install maas-test-db --channel=${maas_release_version}
+  else
+    echo
+    echo "#################################"
+    echo "Installing the MAAS test database"
+    sudo snap install maas-test-db --channel=latest/edge
 
-echo
-echo "##########################"
-echo "Connecting snap interfaces"
-./utilities/connect-snap-interfaces
+    echo
+    echo "#######################"
+    echo "Unpacking the snap tree"
+    sudo snap try dev-snap/tree
 
-echo
-echo "####################################"
-echo "Installing and running the MAAS snap"
-make
-make snap-tree-sync
-sudo snap restart maas
+    echo
+    echo "##########################"
+    echo "Connecting snap interfaces"
+    ./utilities/connect-snap-interfaces
+
+    echo
+    echo "####################################"
+    echo "Installing and running the MAAS snap"
+    make
+    make snap-tree-sync
+    sudo snap restart maas
+  fi
 
 echo
 echo "#######################"
