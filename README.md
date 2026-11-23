@@ -68,8 +68,9 @@ The script will:
   * Clone the source code and (if configured) add a branch for your launcpad account
   * Setup LXD to have a MAAS development container, profiles and networks
   * Setup bridges so that MAAS can reach your network
-  * Will prepare to connect your local LXD to the MAAS development container, so that MAAS can provision virtual machines on your local host
-    * You will still have to do a single manual step here, but you will be guided by the script
+  * Create `MAAS_MACHINE_COUNT` empty LXD VMs on the `maas-kvm` network and add them to MAAS as machines using the `lxd` power driver
+    * The VMs live in a dedicated LXD project, `MAAS_MACHINE_PROJECT`, with a profile of the same name. The project shares the `default` project's networks.
+    * An RSA client certificate is generated in `.lxd-power/` (git-ignored) and trusted by your local LXD, restricted to `MAAS_MACHINE_PROJECT`. The certificate and key are copied into the MAAS container only while the machines are added to MAAS (as power parameters) and removed afterwards.
 
 Basically the script mimics the steps described in [this discourse post](https://discourse.maas.io/t/setting-up-a-minimal-dev-environment-with-lxd/6318) and configures your maas-dev host to be able to connect to your local LXD.
 
@@ -83,4 +84,12 @@ If you need MAAS to accept a self-signed SSL certificate, you must add the certi
 
 ```bash
 ./setup-dev-env.sh --ok -c /path/to/cert.crt
+```
+
+## Adding more machines
+
+Bump `MAAS_MACHINE_COUNT` in `config.sh` and skip every other stage. Existing VMs and machines are reused, so only the new ones get created:
+
+```bash
+./setup-dev-env.sh -su -sd -si -sn -sp -sc -ss -sl -sr --ok
 ```
